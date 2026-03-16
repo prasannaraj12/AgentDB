@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+backend/venv/
+venv/
+env/
+.env
+*.env
+
+# Keep example env
+!backend/.env.example
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.cache/
+
+# Databases (don't commit actual DB files)
+backend/databases/*.db
+backend/databases/shares.json
+backend/ecommerce.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
