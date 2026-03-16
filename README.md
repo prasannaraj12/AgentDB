@@ -1,4 +1,4 @@
-# AgentDB — Intelligent AI Database Agent
+# AgentDB  Intelligent AI Database Agent
 
 > Talk to your database in plain English. Get charts, diagrams, and insights — instantly.
 
