@@ -1,4 +1,4 @@
-# iTech AI Database Agent
+# AgentDB — Intelligent AI Database Agent
 
 > Talk to your database in plain English. Get charts, diagrams, and insights — instantly.
 
@@ -144,24 +144,43 @@ Frontend runs on `http://localhost:5173`
 
 ```
 ├── backend/
-│   ├── main.py              # FastAPI app + endpoints
-│   ├── agent.py             # LangGraph ReAct agent
+│   ├── main.py                  # App entry point — wires routers + middleware
+│   ├── agent.py                 # LangGraph ReAct agent + Schema RAG
+│   ├── routers/
+│   │   ├── chat.py              # /chat and /chat/stream (SSE) endpoints
+│   │   ├── databases.py         # Upload, select, attach, detach DBs
+│   │   ├── export.py            # CSV export
+│   │   ├── share.py             # Shareable dashboard links
+│   │   ├── report.py            # Auto-generated DB report
+│   │   └── suggestions.py       # Smart query suggestions
 │   ├── tools/
-│   │   ├── db_tools.py      # Schema + query execution
-│   │   └── viz_tools.py     # Chart + diagram formatters
+│   │   ├── db_tools.py          # Schema introspection + query execution
+│   │   └── viz_tools.py         # Chart + diagram + insight formatters
 │   ├── database/
-│   │   └── setup_db.py      # Sample DB generator
+│   │   └── setup_db.py          # Sample DB generator
+│   ├── tests/
+│   │   ├── test_db_tools.py     # Unit tests for DB tools
+│   │   └── test_viz_tools.py    # Unit tests for viz tools
 │   └── requirements.txt
 │
-└── frontend/
-    ├── src/
-    │   ├── App.jsx           # Main layout + state
-    │   └── components/
-    │       ├── ChatMessage.jsx   # Message + chart renderer
-    │       ├── Sidebar.jsx       # History + DB selector
-    │       ├── Dashboard.jsx     # Pinned charts grid
-    │       └── DataTable.jsx     # Paginated results table
-    └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx              # Root layout + orchestration
+│   │   ├── hooks/
+│   │   │   ├── useChat.js       # SSE streaming + message state
+│   │   │   ├── useDatabase.js   # DB select / attach / upload logic
+│   │   │   └── useVoiceInput.js # Speech recognition hook
+│   │   └── components/
+│   │       ├── ChatMessage.jsx  # Message renderer (text + rich blobs)
+│   │       ├── ChartRenderer.jsx    # Recharts bar/line/pie/scatter
+│   │       ├── MermaidDiagram.jsx   # Mermaid.js ER + flowcharts
+│   │       ├── DataTable.jsx        # Paginated query results table
+│   │       ├── Dashboard.jsx        # Pinned charts grid
+│   │       ├── ReportModal.jsx      # Auto-generated DB report modal
+│   │       └── SharedDashboard.jsx  # Public shareable dashboard view
+│   └── package.json
+│
+└── docker-compose.yml           # One-command Docker setup
 ```
 
 ---
