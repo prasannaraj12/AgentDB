@@ -1,6 +1,6 @@
 # AgentDB  Intelligent AI Database Agent
 
-> Talk to your database in plain English. Get charts, diagrams, and insights — instantly.
+> Talk to your database in plain English. Get charts, diagrams, and insights instantly.
 
 Built for the **iTech AI Innovation Hackathon 2026** using a LangGraph ReAct agent powered by Google Gemini 2.5 Flash.
 
@@ -8,7 +8,7 @@ Built for the **iTech AI Innovation Hackathon 2026** using a LangGraph ReAct age
 
 ## Overview
 
-AI Database Agent bridges the gap between natural language and structured databases. Ask a question, get a SQL query executed, a chart rendered, and AI-generated insights — all in one response.
+AI Database Agent bridges the gap between natural language and structured databases. Ask a question, get a SQL query executed, a chart rendered, and AI-generated insights all in one response.
 
 No SQL knowledge required.
 
