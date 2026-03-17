@@ -185,6 +185,12 @@ Frontend runs on `http://localhost:5173`
 
 ---
 
+## Resources
+
+[Project Files (Google Drive)](https://drive.google.com/drive/folders/1AvuNI9_RQMy50d-oCMkKmyfZP4bLRcDT?usp=sharing)
+
+---
+
 ## License
 
 MIT
