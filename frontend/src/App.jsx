@@ -191,13 +191,7 @@ export default function App() {
 
           <footer className="input-container">
             <div className="input-inner">
-              {suggestions.length > 0 && messages.length <= 1 && !isLoading && (
-                <div className="suggestions-row">
-                  {suggestions.map((s, i) => (
-                    <button key={i} className="suggestion-chip" onClick={() => setInput(s)}>{s}</button>
-                  ))}
-                </div>
-              )}
+
               <form onSubmit={handleSend} className="input-box">
                 <input type="text" className="input-field" value={input}
                   onChange={(e) => setInput(e.target.value)}

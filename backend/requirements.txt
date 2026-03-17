@@ -11,3 +11,4 @@ pytest
 pytest-asyncio
 faiss-cpu
 numpy
+python-multipart

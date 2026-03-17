@@ -12,7 +12,7 @@ function MiniChart({ config }) {
   if (!data?.length) return null;
 
   if (chart_type === 'bar') return (
-    <ResponsiveContainer width="100%" height={180}>
+    <ResponsiveContainer width="100%" height={280}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#333" />
         <XAxis dataKey={x_axis} stroke="#9ea4b0" tick={{ fontSize: 10 }} />
@@ -26,7 +26,7 @@ function MiniChart({ config }) {
   );
 
   if (chart_type === 'line') return (
-    <ResponsiveContainer width="100%" height={180}>
+    <ResponsiveContainer width="100%" height={280}>
       <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#333" />
         <XAxis dataKey={x_axis} stroke="#9ea4b0" tick={{ fontSize: 10 }} />
@@ -38,9 +38,9 @@ function MiniChart({ config }) {
   );
 
   if (chart_type === 'pie') return (
-    <ResponsiveContainer width="100%" height={180}>
+    <ResponsiveContainer width="100%" height={280}>
       <PieChart>
-        <Pie data={data} dataKey={y_axis} nameKey={x_axis} cx="50%" cy="50%" outerRadius={70}>
+        <Pie data={data} dataKey={y_axis} nameKey={x_axis} cx="50%" cy="50%" outerRadius={110}>
           {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
         </Pie>
         <Tooltip contentStyle={{ backgroundColor: '#1a1d24', border: 'none', borderRadius: '8px', fontSize: '11px' }} />

@@ -2,34 +2,42 @@ import json
 from typing import Dict, Any, List
 
 def generate_chart(chart_type: str, title: str, x_axis: str, y_axis: str, data: List[Dict[str, Any]]) -> str:
-    """
-    Generate the structured JSON configuration for a data visualization chart.
-    This output will be parsed by the frontend to render Recharts components.
-    
-    Args:
-        chart_type (str): The type of chart: 'bar', 'line', 'pie', 'scatter'
-        title (str): Title of the chart
-        x_axis (str): The data key for the x-axis labels
-        y_axis (str): The data key for the y-axis values
-        data (List[Dict[str, Any]]): The raw tabular data rows (typically from execute_query)
-        
-    Returns:
-        str: JSON string containing the chart configuration
-    """
     valid_types = ['bar', 'line', 'pie', 'scatter']
     if chart_type.lower() not in valid_types:
         return json.dumps({"error": f"Invalid chart type. Must be one of {valid_types}."})
-        
-    chart_config = {
+
+    if not data:
+        return json.dumps({"error": "No data provided to generate chart."})
+
+    # Auto-correct axis names if they don't match actual columns
+    actual_cols = list(data[0].keys())
+
+    def best_match(name: str, cols: List[str]) -> str:
+        if name in cols:
+            return name
+        # Try case-insensitive match
+        lower = name.lower()
+        for c in cols:
+            if c.lower() == lower:
+                return c
+        # Try partial match (e.g. "price" matches "product_price")
+        for c in cols:
+            if lower in c.lower() or c.lower() in lower:
+                return c
+        # Fallback: return original (frontend will show no-data message)
+        return name
+
+    x_axis = best_match(x_axis, actual_cols)
+    y_axis = best_match(y_axis, actual_cols)
+
+    return json.dumps({
         "type": "chart",
         "chart_type": chart_type.lower(),
         "title": title,
         "x_axis": x_axis,
         "y_axis": y_axis,
         "data": data
-    }
-    
-    return json.dumps(chart_config)
+    })
 
 def generate_flowchart(mermaid_string: str) -> str:
     """

@@ -1,8 +1,7 @@
 import os
 import json
 import re
-import numpy as np
-import faiss
+import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import tool
@@ -51,6 +50,7 @@ class SchemaRAG:
 
 
 _schema_rag = SchemaRAG()
+logger = logging.getLogger(__name__)
 
 @tool
 def tool_get_schema() -> str:
@@ -116,39 +116,40 @@ Tools available:
 4. `tool_generate_flowchart`: Render ER diagrams or process flows (Mermaid.js). Never use () inside node labels.
 5. `tool_explain_data`: Package 3-5 bullet insights about the data as a styled card.
 
-MANDATORY WORKFLOWS — follow these exactly:
+MANDATORY WORKFLOWS — you MUST follow these exactly, no exceptions:
 
-When user asks for a CHART (bar, line, pie, scatter, plot, graph, visualization):
-  Step 1: Call tool_execute_query to get the data
-  Step 2: YOU MUST call tool_generate_chart immediately after — pass the COMPLETE raw JSON string from step 1 as `data`. NEVER skip this step.
-  Step 3: Call tool_explain_data with 3-5 bullet insights
-  Step 4: Return a short summary sentence only. No raw JSON in text.
+CHART REQUEST (any of: bar, line, pie, scatter, plot, graph, visualization, chart):
+  Step 1: tool_execute_query → get data
+  Step 2: tool_generate_chart → YOU MUST DO THIS. Use the FULL JSON string from step 1 as `data`. NEVER skip.
+  Step 3: tool_explain_data → 3-5 bullet insights
+  Step 4: Reply with one short sentence summary. No JSON in text.
 
-When user asks for DATA / TABLE (show me, list, count, total, average):
-  Step 1: Call tool_execute_query
-  Step 2: Call tool_explain_data with 3-5 bullet insights
-  Step 3: Return a short summary sentence.
+DATA / TABLE REQUEST (show, list, count, total, average, top, who, which):
+  Step 1: tool_execute_query
+  Step 2: tool_explain_data → 3-5 bullet insights
+  Step 3: Reply with one short sentence summary.
 
-When user asks for a DIAGRAM / RELATIONSHIP / ER diagram:
-  Step 1: Call tool_generate_flowchart with Mermaid syntax
-  Step 2: Call tool_explain_data with insights
-  Step 3: Return a short summary sentence.
+DIAGRAM REQUEST (ER diagram, relationship, flowchart, process):
+  Step 1: tool_generate_flowchart
+  Step 2: tool_explain_data
+  Step 3: Reply with one short sentence summary.
 
-For generic/conversational questions: answer directly, NO tool calls.
+CONVERSATIONAL (greetings, how-to questions): answer directly, no tools.
 
-CRITICAL RULES:
-- "scatter", "scatter plot", "scatter chart" → chart_type MUST be "scatter"
-- "bar chart", "bar graph" → chart_type MUST be "bar"
-- "line chart", "line graph" → chart_type MUST be "line"
-- "pie chart" → chart_type MUST be "pie"
-- ANY mention of "chart", "plot", "graph", "visualization" → YOU MUST call tool_generate_chart. This is non-negotiable.
-- Pass the FULL unmodified JSON string from tool_execute_query into tool_generate_chart data parameter.
-- x_axis and y_axis must be exact column names from the query result.
-- Do NOT output raw JSON blobs in your final text response.
-- Cross-DB queries: prefix with alias e.g. SELECT * FROM [sakila].customer
+STRICT RULES — violating these is an error:
+- If the user says "scatter", "scatter plot", "scatter chart" → chart_type = "scatter"
+- If the user says "bar chart" or "bar graph" → chart_type = "bar"
+- If the user says "line chart" or "line graph" → chart_type = "line"
+- If the user says "pie chart" → chart_type = "pie"
+- If the query contains ANY of: chart, plot, graph, visualization, scatter, bar, line, pie → you MUST call tool_generate_chart after tool_execute_query. No exceptions.
+- After tool_execute_query, if a chart was requested, your VERY NEXT action must be tool_generate_chart.
+- Pass the complete raw JSON string from tool_execute_query directly into tool_generate_chart `data` param.
+- x_axis and y_axis must exactly match column names in the query result (e.g. "price", "total_revenue").
+- Never output raw JSON blobs in your text response.
+- Cross-DB queries: use alias prefix e.g. SELECT * FROM [sakila].customer
 """
 
-# Singleton — created once, reused across all requests
+# Singleton — created once, reused across requests, reset on DB change
 _agent_executor = None
 _agent_schema_key: str = ""
 
@@ -181,6 +182,7 @@ def get_agent_executor():
 
     _agent_executor = create_react_agent(llm, tools, prompt=full_prompt)
     _agent_schema_key = current_key
+    logger.info("Agent executor rebuilt for schema key: %s", current_key)
     return _agent_executor
 
 

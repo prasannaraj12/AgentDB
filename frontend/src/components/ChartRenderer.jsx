@@ -14,8 +14,11 @@ const tooltipStyle = {
 };
 
 export default function ChartRenderer({ config, sqlQuery, onPinChart }) {
-  const { chart_type, title, x_axis, y_axis, data } = config;
+  const { chart_type: rawType, title, x_axis, y_axis, data } = config;
+  const chart_type = (rawType || '').toLowerCase().trim();
   const chartRef = useRef(null);
+
+  console.log('[ChartRenderer]', { chart_type, x_axis, y_axis, rows: data?.length, sample: data?.[0] });
 
   if (!data?.length) return (
     <div className="rich-content" style={{ padding: '16px', color: '#6e6e73', fontSize: '0.85rem' }}>
@@ -66,21 +69,61 @@ export default function ChartRenderer({ config, sqlQuery, onPinChart }) {
     </PieChart>
   );
   else if (chart_type === 'scatter') {
-    const scatterData = data.map(d => ({ x: Number(d[x_axis]), y: Number(d[y_axis]) }));
+    const xIsNumeric = data.every(d => !isNaN(Number(d[x_axis])));
+    const scatterData = data.map((d, i) => ({
+      x: xIsNumeric ? Number(d[x_axis]) : i,
+      y: Number(d[y_axis]),
+      label: String(d[x_axis]),
+    })).filter(d => !isNaN(d.y));
+
+    if (!scatterData.length) return (
+      <div className="rich-content" style={{ padding: '16px', color: '#6e6e73', fontSize: '0.85rem' }}>
+        Scatter plot could not render — y-axis column "{y_axis}" has no numeric values.
+      </div>
+    );
+
     ChartComponent = (
       <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e5ea" />
-        <XAxis dataKey="x" type="number" name={x_axis} stroke="#aeaeb2" tick={{ fontSize: 11 }}
-          label={{ value: x_axis, position: 'insideBottomRight', offset: 0, dy: 20, fontSize: 11, fill: '#aeaeb2' }} />
+        <XAxis
+          dataKey="x"
+          type="number"
+          name={x_axis}
+          stroke="#aeaeb2"
+          tick={{ fontSize: 11 }}
+          tickFormatter={xIsNumeric ? undefined : (val) => {
+            const item = scatterData[val];
+            return item ? item.label : val;
+          }}
+          label={{ value: x_axis, position: 'insideBottomRight', offset: 0, dy: 20, fontSize: 11, fill: '#aeaeb2' }}
+        />
         <YAxis dataKey="y" type="number" name={y_axis} stroke="#aeaeb2" tick={{ fontSize: 11 }}
           label={{ value: y_axis, angle: -90, position: 'insideLeft', dx: -5, fontSize: 11, fill: '#aeaeb2' }} />
-        <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={tooltipStyle}
-          formatter={(value, name) => [value.toLocaleString(), name]} />
+        <Tooltip
+          cursor={{ strokeDasharray: '3 3' }}
+          contentStyle={tooltipStyle}
+          content={({ payload }) => {
+            if (!payload?.length) return null;
+            const d = payload[0].payload;
+            return (
+              <div className="custom-tooltip" style={{ ...tooltipStyle, padding: '8px 12px' }}>
+                <p style={{ margin: 0 }}>{x_axis}: {xIsNumeric ? d.x.toLocaleString() : d.label}</p>
+                <p style={{ margin: 0 }}>{y_axis}: {d.y.toLocaleString()}</p>
+              </div>
+            );
+          }}
+        />
         <Legend verticalAlign="top" />
         <Scatter name={title || `${x_axis} vs ${y_axis}`} data={scatterData} fill="#007aff" />
       </ScatterChart>
     );
   }
+
+  if (!ChartComponent) return (
+    <div className="rich-content">
+      <DataTable data={data} sqlQuery={sqlQuery} />
+    </div>
+  );
 
   return (
     <div className="rich-content" ref={chartRef}>
