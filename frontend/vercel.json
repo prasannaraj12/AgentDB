@@ -5,7 +5,6 @@
     { "source": "/export/:path*", "destination": "https://agentdb.onrender.com/export/:path*" },
     { "source": "/report/:path*", "destination": "https://agentdb.onrender.com/report/:path*" },
     { "source": "/suggestions/:path*", "destination": "https://agentdb.onrender.com/suggestions/:path*" },
-    { "source": "/share/:path*", "destination": "https://agentdb.onrender.com/share/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/share/:path*", "destination": "https://agentdb.onrender.com/share/:path*" }
   ]
 }
