@@ -12,3 +12,5 @@ pytest-asyncio
 faiss-cpu
 numpy
 python-multipart
+supabase
+PyJWT
