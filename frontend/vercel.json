@@ -1,11 +1,11 @@
 {
   "rewrites": [
-    { "source": "/chat/:path*", "destination": "https://agentdb-backend.onrender.com/chat/:path*" },
-    { "source": "/databases/:path*", "destination": "https://agentdb-backend.onrender.com/databases/:path*" },
-    { "source": "/export/:path*", "destination": "https://agentdb-backend.onrender.com/export/:path*" },
-    { "source": "/report/:path*", "destination": "https://agentdb-backend.onrender.com/report/:path*" },
-    { "source": "/suggestions/:path*", "destination": "https://agentdb-backend.onrender.com/suggestions/:path*" },
-    { "source": "/share/:path*", "destination": "https://agentdb-backend.onrender.com/share/:path*" },
+    { "source": "/chat/:path*", "destination": "https://agentdb.onrender.com/chat/:path*" },
+    { "source": "/databases/:path*", "destination": "https://agentdb.onrender.com/databases/:path*" },
+    { "source": "/export/:path*", "destination": "https://agentdb.onrender.com/export/:path*" },
+    { "source": "/report/:path*", "destination": "https://agentdb.onrender.com/report/:path*" },
+    { "source": "/suggestions/:path*", "destination": "https://agentdb.onrender.com/suggestions/:path*" },
+    { "source": "/share/:path*", "destination": "https://agentdb.onrender.com/share/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
