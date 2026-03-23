@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Database, BarChart2, GitBranch, Zap, ChevronDown, Star, ArrowRight, Table, Brain, Share2, MessageSquare, CheckCircle } from 'lucide-react';
 
 const FEATURES = [
@@ -57,8 +57,32 @@ function FAQItem({ q, a }) {
 }
 
 export default function LandingPage({ onLaunch }) {
+  const [exiting, setExiting] = useState(false);
+  const sectionRefs = useRef([]);
+
+  // Intersection observer for section reveal animations
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.style.animation = 'sectionReveal 0.65s cubic-bezier(0.4,0,0.2,1) both';
+          observer.unobserve(e.target);
+        }
+      }),
+      { threshold: 0.12 }
+    );
+    sectionRefs.current.forEach(el => { if (el) { el.style.opacity = '0'; observer.observe(el); } });
+    return () => observer.disconnect();
+  }, []);
+
+  const handleLaunch = () => {
+    setExiting(true);
+    setTimeout(onLaunch, 380);
+  };
+
+  const ref = (i) => (el) => { sectionRefs.current[i] = el; };
   return (
-    <div style={{ background: '#0a0b0f', color: '#fff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif", overflowX: 'hidden', minHeight: '100vh' }}>
+    <div className={exiting ? 'landing-exit' : 'landing-enter'} style={{ background: '#0a0b0f', color: '#fff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif", overflowX: 'hidden', minHeight: '100vh', width: '100%', boxSizing: 'border-box' }}>
 
       {/* ── NAV ── */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(10,11,15,0.9)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 6vw', display: 'flex', alignItems: 'center', height: 64 }}>
@@ -73,7 +97,7 @@ export default function LandingPage({ onLaunch }) {
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00C49F', boxShadow: '0 0 6px #00C49F' }} />
             <span style={{ fontSize: '0.73rem', color: '#c4b5fd', fontWeight: 500 }}>Gemini 2.5 Flash</span>
           </div>
-          <button onClick={onLaunch} style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', color: '#fff', border: 'none', borderRadius: 9, padding: '9px 20px', fontSize: '0.87rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(107,76,255,0.35)', transition: 'transform 0.15s, box-shadow 0.15s' }}
+          <button onClick={handleLaunch} style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', color: '#fff', border: 'none', borderRadius: 9, padding: '9px 20px', fontSize: '0.87rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(107,76,255,0.35)', transition: 'transform 0.15s, box-shadow 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(107,76,255,0.5)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,76,255,0.35)'; }}>
             Launch App →
@@ -102,7 +126,7 @@ export default function LandingPage({ onLaunch }) {
         </p>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 72 }}>
-          <button onClick={onLaunch} style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', color: '#fff', border: 'none', borderRadius: 12, padding: '15px 36px', fontSize: '1.05rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, boxShadow: '0 8px 24px rgba(107,76,255,0.4)' }}
+          <button onClick={handleLaunch} style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', color: '#fff', border: 'none', borderRadius: 12, padding: '15px 36px', fontSize: '1.05rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, boxShadow: '0 8px 24px rgba(107,76,255,0.4)' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
             Start for free <ArrowRight size={17} />
@@ -182,7 +206,7 @@ export default function LandingPage({ onLaunch }) {
       </section>
 
       {/* ── TECH STACK STRIP ── */}
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '22px 6vw', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4vw', flexWrap: 'wrap', background: 'rgba(255,255,255,0.02)' }}>
+      <div ref={ref(0)} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '22px 6vw', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4vw', flexWrap: 'wrap', background: 'rgba(255,255,255,0.02)' }}>
         <span style={{ color: '#444', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginRight: 8 }}>Built with</span>
         {['FastAPI', 'LangGraph', 'Gemini 2.5 Flash', 'React', 'Recharts', 'Mermaid.js', 'SQLite'].map(t => (
           <span key={t} style={{ color: '#6e6e73', fontSize: '0.88rem', fontWeight: 600, letterSpacing: '-0.01em' }}>{t}</span>
@@ -190,7 +214,7 @@ export default function LandingPage({ onLaunch }) {
       </div>
 
       {/* ── HOW IT WORKS ── */}
-      <section style={{ padding: '100px 6vw', background: 'linear-gradient(180deg, #0a0b0f 0%, #0d0e16 100%)' }}>
+      <section ref={ref(1)} style={{ padding: '100px 6vw', background: 'linear-gradient(180deg, #0a0b0f 0%, #0d0e16 100%)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
             <div style={{ display: 'inline-block', background: 'rgba(107,76,255,0.1)', border: '1px solid rgba(107,76,255,0.3)', borderRadius: 20, padding: '4px 14px', fontSize: '0.75rem', color: '#c4b5fd', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>How it works</div>
@@ -210,7 +234,7 @@ export default function LandingPage({ onLaunch }) {
       </section>
 
       {/* ── FEATURES ── */}
-      <section style={{ padding: '100px 6vw', background: '#0a0b0f' }}>
+      <section ref={ref(2)} style={{ padding: '100px 6vw', background: '#0a0b0f' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
             <div style={{ display: 'inline-block', background: 'rgba(0,196,159,0.1)', border: '1px solid rgba(0,196,159,0.3)', borderRadius: 20, padding: '4px 14px', fontSize: '0.75rem', color: '#00C49F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Features</div>
@@ -234,7 +258,7 @@ export default function LandingPage({ onLaunch }) {
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section style={{ padding: '100px 6vw', background: 'linear-gradient(180deg, #0d0e16 0%, #0a0b0f 100%)' }}>
+      <section ref={ref(3)} style={{ padding: '100px 6vw', background: 'linear-gradient(180deg, #0d0e16 0%, #0a0b0f 100%)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
             <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', margin: 0 }}>Loved by <span style={{ background: 'linear-gradient(135deg,#6b4cff,#00C49F)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>data teams</span></h2>
@@ -260,7 +284,7 @@ export default function LandingPage({ onLaunch }) {
       </section>
 
       {/* ── FAQ ── */}
-      <section style={{ padding: '100px 6vw', background: '#0a0b0f' }}>
+      <section ref={ref(4)} style={{ padding: '100px 6vw', background: '#0a0b0f' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', margin: 0 }}>Frequently asked <span style={{ color: '#6b4cff' }}>questions</span></h2>
@@ -272,7 +296,7 @@ export default function LandingPage({ onLaunch }) {
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section style={{ padding: '100px 6vw', textAlign: 'center', position: 'relative', overflow: 'hidden', background: 'linear-gradient(180deg, #0a0b0f 0%, #0d0e16 100%)' }}>
+      <section ref={ref(5)} style={{ padding: '100px 6vw', textAlign: 'center', position: 'relative', overflow: 'hidden', background: 'linear-gradient(180deg, #0a0b0f 0%, #0d0e16 100%)' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 700, height: 400, background: 'radial-gradient(ellipse, rgba(107,76,255,0.15) 0%, transparent 65%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
           <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 18, lineHeight: 1.1 }}>
@@ -280,7 +304,7 @@ export default function LandingPage({ onLaunch }) {
             <span style={{ background: 'linear-gradient(135deg,#6b4cff,#00C49F)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>all you need is AgentDB</span>
           </h2>
           <p style={{ color: '#9ea4b0', fontSize: '1.05rem', marginBottom: 44, lineHeight: 1.7 }}>Start querying your database in plain English today. Free, forever.</p>
-          <button onClick={onLaunch} style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', color: '#fff', border: 'none', borderRadius: 12, padding: '16px 44px', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, boxShadow: '0 10px 30px rgba(107,76,255,0.45)', letterSpacing: '-0.01em' }}
+          <button onClick={handleLaunch} style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', color: '#fff', border: 'none', borderRadius: 12, padding: '16px 44px', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, boxShadow: '0 10px 30px rgba(107,76,255,0.45)', letterSpacing: '-0.01em' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
             Launch AgentDB <ArrowRight size={18} />

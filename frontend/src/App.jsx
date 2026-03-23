@@ -93,7 +93,7 @@ export default function App() {
   if (appMode === 'landing') return <LandingPage onLaunch={() => setAppMode('app')} />;
 
   return (
-    <div className="app-container">
+    <div className="app-container" style={{ animation: 'appLoad 0.5s cubic-bezier(0.4,0,0.2,1) both' }}>
       {/* Title Bar */}
       <div className="titlebar">
         <div className="traffic-lights">
