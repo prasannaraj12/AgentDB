@@ -16,6 +16,14 @@ export default function App() {
 
   const [appMode, setAppMode] = useState('landing'); // 'landing' | 'app'
   const [input, setInput] = useState('');
+
+  useEffect(() => {
+    if (appMode === 'landing') {
+      document.body.classList.add('landing');
+    } else {
+      document.body.classList.remove('landing');
+    }
+  }, [appMode]);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [pinnedCharts, setPinnedCharts] = useState([]);
