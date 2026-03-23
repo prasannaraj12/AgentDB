@@ -56,6 +56,209 @@ function FAQItem({ q, a }) {
   );
 }
 
+const DEMOS = [
+  {
+    label: 'Bar Chart',
+    tag: 'ecommerce.db',
+    tagColor: '#6b4cff',
+    query: 'Show a bar chart of sales by product category',
+    response: "Here's the bar chart of sales by product category:",
+    insight: ['Sports leads with highest revenue at $90K', 'Electronics and Beauty show strong performance', 'Books category has growth opportunity'],
+    insightColor: '#00C49F',
+    visual: ({ }) => (
+      <div style={{ background: '#0d0e14', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '16px 16px 8px' }}>
+        <div style={{ fontSize: '0.73rem', color: '#9ea4b0', marginBottom: 10, fontWeight: 500 }}>Sales by Product Category</div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90, paddingBottom: 4 }}>
+          {CHART_BARS.map((b, i) => (
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <div style={{ width: '100%', height: `${b.h}%`, background: b.color, borderRadius: '3px 3px 0 0', boxShadow: `0 0 8px ${b.color}55` }} />
+              <span style={{ fontSize: '0.55rem', color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{b.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    label: 'ER Diagram',
+    tag: 'chinook.db',
+    tagColor: '#00C49F',
+    query: 'Draw the ER diagram for the Chinook database',
+    response: "Here's the ER diagram showing all tables and relationships:",
+    insight: ['12 tables with 11 foreign key relationships', 'Artist → Album → Track is the core hierarchy', 'Invoice and Customer are tightly coupled'],
+    insightColor: '#FFBB28',
+    visual: () => (
+      <div style={{ background: '#0d0e14', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '16px', fontFamily: 'monospace', fontSize: '0.7rem', color: '#9ea4b0', lineHeight: 1.8 }}>
+        <div style={{ color: '#00C49F', fontWeight: 700, marginBottom: 8 }}>erDiagram</div>
+        {[
+          ['Artist', '||--o{', 'Album', 'has'],
+          ['Album', '||--o{', 'Track', 'contains'],
+          ['Track', '}o--||', 'Genre', 'belongs'],
+          ['Invoice', '||--o{', 'InvoiceLine', 'includes'],
+          ['Customer', '||--o{', 'Invoice', 'places'],
+        ].map(([a, rel, b, label], i) => (
+          <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ color: '#6b4cff' }}>{a}</span>
+            <span style={{ color: '#555' }}>{rel}</span>
+            <span style={{ color: '#00C49F' }}>{b}</span>
+            <span style={{ color: '#444' }}>: "{label}"</span>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    label: 'AI Insights',
+    tag: 'sakila.db',
+    tagColor: '#FFBB28',
+    query: 'Who are the top 5 customers by total spending?',
+    response: 'Here are the top 5 customers by total spending:',
+    insight: ['Eleanor Hunt leads at $211.55 total spend', 'Top 5 customers account for 8.2% of revenue', 'All top spenders are from North America'],
+    insightColor: '#6b4cff',
+    visual: () => (
+      <div style={{ background: '#0d0e14', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(255,255,255,0.04)', padding: '7px 14px', fontSize: '0.68rem', color: '#555', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span>Customer</span><span>Country</span><span style={{ textAlign: 'right' }}>Total</span>
+        </div>
+        {[
+          ['Eleanor Hunt', 'Canada', '$211.55'],
+          ['Karl Schnyder', 'Switzerland', '$195.10'],
+          ['Astrid Gruber', 'Austria', '$183.15'],
+          ['Wyatt Girard', 'France', '$174.90'],
+          ['Fynn Zimmermann', 'Germany', '$166.80'],
+        ].map(([name, country, total], i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', padding: '8px 14px', fontSize: '0.78rem', borderTop: '1px solid rgba(255,255,255,0.04)', alignItems: 'center' }}>
+            <span style={{ color: '#e0e0e0', fontWeight: 500 }}>{name}</span>
+            <span style={{ color: '#9ea4b0' }}>{country}</span>
+            <span style={{ color: '#00C49F', textAlign: 'right', fontWeight: 600 }}>{total}</span>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+];
+
+const AgentAvatar = () => (
+  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(107,76,255,0.4)' }}>
+    <Database size={13} color="#fff" />
+  </div>
+);
+
+function DemoDeck({ handleTilt, resetTilt }) {
+  const [active, setActive] = useState(0);
+  const demo = DEMOS[active];
+  const Visual = demo.visual;
+
+  return (
+    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+      {/* Tab switcher */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 28 }}>
+        {DEMOS.map((d, i) => (
+          <button key={i} onClick={() => setActive(i)} style={{
+            background: active === i ? 'rgba(107,76,255,0.15)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${active === i ? 'rgba(107,76,255,0.5)' : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: 24, padding: '7px 18px', fontSize: '0.82rem', fontWeight: 600,
+            color: active === i ? '#c4b5fd' : '#6e6e73', cursor: 'pointer',
+            transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: d.tagColor, display: 'inline-block', boxShadow: `0 0 6px ${d.tagColor}` }} />
+            {d.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Stacked card deck */}
+      <div style={{ position: 'relative', height: 520 }}>
+        {DEMOS.map((d, i) => {
+          const offset = i - active;
+          const isActive = i === active;
+          const isPrev = offset < 0;
+          const scale = isActive ? 1 : 1 - Math.abs(offset) * 0.04;
+          const translateY = isActive ? 0 : Math.abs(offset) * 14;
+          const translateZ = isActive ? 0 : -Math.abs(offset) * 40;
+          const opacity = isActive ? 1 : 1 - Math.abs(offset) * 0.35;
+          const zIndex = DEMOS.length - Math.abs(offset);
+          const V = d.visual;
+
+          return (
+            <div key={i}
+              onClick={() => !isActive && setActive(i)}
+              onMouseMove={isActive ? handleTilt : undefined}
+              onMouseLeave={isActive ? resetTilt : undefined}
+              style={{
+                position: 'absolute', top: 0, left: 0, right: 0,
+                transform: `perspective(1200px) scale(${scale}) translateY(${translateY}px) translateZ(${translateZ}px)`,
+                opacity, zIndex,
+                transition: 'all 0.5s cubic-bezier(0.4,0,0.2,1)',
+                cursor: isActive ? 'default' : 'pointer',
+                borderRadius: 18, overflow: 'hidden',
+                border: `1px solid ${isActive ? 'rgba(107,76,255,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                boxShadow: isActive ? '0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(107,76,255,0.1)' : '0 20px 40px rgba(0,0,0,0.4)',
+                background: '#12131a',
+              }}>
+              {/* Window chrome */}
+              <div style={{ background: '#0d0e14', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
+                <span style={{ marginLeft: 8, fontSize: '0.73rem', color: '#444' }}>AgentDB — Intelligent Database Agent</span>
+                <div style={{ marginLeft: 'auto' }}>
+                  <span style={{ background: `${d.tagColor}18`, border: `1px solid ${d.tagColor}40`, borderRadius: 6, padding: '2px 10px', fontSize: '0.67rem', color: d.tagColor, fontWeight: 600 }}>{d.tag}</span>
+                </div>
+              </div>
+              {/* Chat */}
+              <div style={{ padding: '20px 22px 16px', display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'left' }}>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <AgentAvatar />
+                  <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '4px 12px 12px 12px', padding: '10px 14px', fontSize: '0.84rem', color: '#e0e0e0', lineHeight: 1.6 }}>
+                    Hello! I'm AgentDB. Ask me anything about your database.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', borderRadius: '12px 4px 12px 12px', padding: '10px 14px', fontSize: '0.84rem', color: '#fff', maxWidth: 380 }}>
+                    {d.query}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <AgentAvatar />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '4px 12px 12px 12px', padding: '10px 14px', fontSize: '0.84rem', color: '#e0e0e0', marginBottom: 10 }}>
+                      {d.response}
+                    </div>
+                    <V />
+                    <div style={{ background: `${d.insightColor}0d`, border: `1px solid ${d.insightColor}30`, borderRadius: 10, padding: '10px 14px', marginTop: 10 }}>
+                      <div style={{ fontSize: '0.7rem', color: d.insightColor, fontWeight: 700, marginBottom: 6 }}>✦ AI Insights</div>
+                      {d.insight.map((ins, j) => (
+                        <div key={j} style={{ fontSize: '0.78rem', color: '#9ea4b0', lineHeight: 1.6 }}>• {ins}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Input */}
+              <div style={{ padding: '10px 18px 14px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 22, padding: '9px 16px', fontSize: '0.82rem', color: '#444' }}>
+                  Ask about your database...
+                </div>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <ArrowRight size={14} color="#fff" />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Dot indicators */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
+        {DEMOS.map((_, i) => (
+          <button key={i} onClick={() => setActive(i)} style={{ width: active === i ? 24 : 8, height: 8, borderRadius: 4, background: active === i ? '#6b4cff' : 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', transition: 'all 0.3s', padding: 0 }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage({ onLaunch }) {
   const [exiting, setExiting] = useState(false);
   const sectionRefs = useRef([]);
@@ -164,72 +367,8 @@ export default function LandingPage({ onLaunch }) {
           </div>
         </div>
 
-        {/* App preview window */}
-        <div className="card-3d" onMouseMove={handleTilt} onMouseLeave={resetTilt} style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 50px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(107,76,255,0.15)', background: '#12131a', transition: 'transform 0.2s, box-shadow 0.2s' }}>
-          {/* Window chrome */}
-          <div style={{ background: '#0d0e14', padding: '13px 18px', display: 'flex', alignItems: 'center', gap: 7, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#ff5f57' }} />
-            <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#febc2e' }} />
-            <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#28c840' }} />
-            <span style={{ marginLeft: 10, fontSize: '0.75rem', color: '#444', fontWeight: 500 }}>AgentDB — Intelligent Database Agent</span>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-              <div style={{ background: 'rgba(107,76,255,0.15)', border: '1px solid rgba(107,76,255,0.3)', borderRadius: 6, padding: '2px 10px', fontSize: '0.68rem', color: '#c4b5fd' }}>ecommerce.db</div>
-            </div>
-          </div>
-          {/* Chat area */}
-          <div style={{ padding: '28px 28px 20px', display: 'flex', flexDirection: 'column', gap: 18, textAlign: 'left' }}>
-            {/* Agent message */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(107,76,255,0.4)' }}>
-                <Database size={14} color="#fff" />
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '4px 14px 14px 14px', padding: '12px 16px', fontSize: '0.87rem', color: '#e0e0e0', lineHeight: 1.65, maxWidth: 480 }}>
-                Hello! I'm AgentDB. Ask me anything about your database — queries, charts, diagrams, or insights.
-              </div>
-            </div>
-            {/* User message */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <div style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', borderRadius: '14px 4px 14px 14px', padding: '12px 16px', fontSize: '0.87rem', color: '#fff', maxWidth: 360 }}>
-                Show a bar chart of sales by product category
-              </div>
-            </div>
-            {/* Agent response with chart */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(107,76,255,0.4)' }}>
-                <Database size={14} color="#fff" />
-              </div>
-              <div style={{ flex: 1, maxWidth: 560 }}>
-                <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '4px 14px 14px 14px', padding: '12px 16px', fontSize: '0.87rem', color: '#e0e0e0', marginBottom: 10 }}>
-                  Here's the bar chart of sales by product category:
-                </div>
-                <div style={{ background: '#0d0e14', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '16px 16px 8px', overflow: 'hidden' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#9ea4b0', marginBottom: 12, fontWeight: 500 }}>Sales by Product Category</div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 100, paddingBottom: 4 }}>
-                    {CHART_BARS.map((b, i) => (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: '100%', height: `${b.h}%`, background: b.color, borderRadius: '4px 4px 0 0', opacity: 0.85, boxShadow: `0 0 10px ${b.color}44` }} />
-                        <span style={{ fontSize: '0.6rem', color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{b.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(0,196,159,0.06)', border: '1px solid rgba(0,196,159,0.2)', borderRadius: 10, padding: '10px 14px', marginTop: 10 }}>
-                  <div style={{ fontSize: '0.72rem', color: '#00C49F', fontWeight: 600, marginBottom: 6 }}>✦ AI Insights</div>
-                  <div style={{ fontSize: '0.8rem', color: '#9ea4b0', lineHeight: 1.6 }}>• Sports leads with highest revenue at $90K<br />• Electronics and Beauty show strong performance<br />• Books category has growth opportunity</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Input bar */}
-          <div style={{ padding: '12px 20px 16px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: '10px 18px', fontSize: '0.85rem', color: '#555' }}>
-              Ask about your database, request a chart, or ask for insights...
-            </div>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ArrowRight size={15} color="#fff" />
-            </div>
-          </div>
-        </div>
+        {/* ── 3-Card Demo Deck ── */}
+        <DemoDeck handleTilt={handleTilt} resetTilt={resetTilt} />
       </section>
 
       {/* ── TECH STACK STRIP ── */}
