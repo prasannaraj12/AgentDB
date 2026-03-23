@@ -25,7 +25,6 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   background: var(--bg);
   height: 100vh;
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   animation: appLoad 0.35s var(--smooth);
 }

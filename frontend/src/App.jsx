@@ -4,6 +4,7 @@ import ChatMessage from './components/ChatMessage';
 import Dashboard from './components/Dashboard';
 import ReportModal from './components/ReportModal';
 import SharedDashboard from './components/SharedDashboard';
+import LandingPage from './components/LandingPage';
 import { useChat } from './hooks/useChat';
 import { useDatabase } from './hooks/useDatabase';
 import { useVoiceInput } from './hooks/useVoiceInput';
@@ -13,6 +14,7 @@ const WELCOME = 'Hello! I am AgentDB, your Intelligent Database AI Agent. Ask me
 export default function App() {
   if (window.location.pathname.startsWith('/share/')) return <SharedDashboard />;
 
+  const [appMode, setAppMode] = useState('landing'); // 'landing' | 'app'
   const [input, setInput] = useState('');
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -79,6 +81,8 @@ export default function App() {
 
   const handlePinChart = (config) => setPinnedCharts((prev) => [...prev, config]);
   const handleUnpinChart = (i) => setPinnedCharts((prev) => prev.filter((_, idx) => idx !== i));
+
+  if (appMode === 'landing') return <LandingPage onLaunch={() => setAppMode('app')} />;
 
   return (
     <div className="app-container">
