@@ -81,7 +81,20 @@ export default function LandingPage({ onLaunch }) {
   };
 
   const ref = (i) => (el) => { sectionRefs.current[i] = el; };
-  return (
+
+  // 3D tilt on mouse move
+  const handleTilt = (e) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    el.style.transform = `perspective(900px) rotateY(${x * 14}deg) rotateX(${-y * 10}deg) translateZ(10px)`;
+    el.style.boxShadow = `${-x * 20}px ${y * 20}px 50px rgba(107,76,255,0.25)`;
+  };
+  const resetTilt = (e) => {
+    e.currentTarget.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg) translateZ(0)';
+    e.currentTarget.style.boxShadow = '0 50px 100px rgba(0,0,0,0.6)';
+  };  return (
     <div className={exiting ? 'landing-exit' : 'landing-enter'} style={{ background: '#0a0b0f', color: '#fff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif", overflowX: 'hidden', minHeight: '100vh', width: '100%', boxSizing: 'border-box' }}>
 
       {/* ── NAV ── */}
@@ -112,6 +125,20 @@ export default function LandingPage({ onLaunch }) {
         <div style={{ position: 'absolute', top: 200, left: '15%', width: 300, height: 300, background: 'radial-gradient(circle, rgba(0,196,159,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: 150, right: '10%', width: 250, height: 250, background: 'radial-gradient(circle, rgba(255,187,40,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
+        {/* 3D floating orbs */}
+        <div style={{ position: 'absolute', top: 80, left: '8%', width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', opacity: 0.25, animation: 'floatSlow 7s ease-in-out infinite', pointerEvents: 'none', boxShadow: '0 0 40px rgba(107,76,255,0.5)' }} />
+        <div style={{ position: 'absolute', top: 160, right: '7%', width: 50, height: 50, borderRadius: '50%', background: 'linear-gradient(135deg,#00C49F,#00a884)', opacity: 0.3, animation: 'floatSlow 5s ease-in-out infinite 1s', pointerEvents: 'none', boxShadow: '0 0 30px rgba(0,196,159,0.5)' }} />
+        <div style={{ position: 'absolute', top: 300, left: '5%', width: 30, height: 30, borderRadius: '50%', background: '#FFBB28', opacity: 0.2, animation: 'floatSlow 9s ease-in-out infinite 2s', pointerEvents: 'none', boxShadow: '0 0 20px rgba(255,187,40,0.5)' }} />
+        <div style={{ position: 'absolute', top: 250, right: '12%', width: 20, height: 20, borderRadius: '50%', background: '#FF8042', opacity: 0.25, animation: 'floatSlow 6s ease-in-out infinite 0.5s', pointerEvents: 'none' }} />
+
+        {/* Spinning rings */}
+        <div style={{ position: 'absolute', top: 60, right: '18%', width: 120, height: 120, borderRadius: '50%', border: '1px solid rgba(107,76,255,0.2)', animation: 'spinOrb 12s linear infinite', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: -4, left: '50%', width: 8, height: 8, borderRadius: '50%', background: '#6b4cff', transform: 'translateX(-50%)', boxShadow: '0 0 10px #6b4cff' }} />
+        </div>
+        <div style={{ position: 'absolute', top: 120, left: '20%', width: 70, height: 70, borderRadius: '50%', border: '1px solid rgba(0,196,159,0.2)', animation: 'spinOrb 8s linear infinite reverse', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: -3, left: '50%', width: 6, height: 6, borderRadius: '50%', background: '#00C49F', transform: 'translateX(-50%)', boxShadow: '0 0 8px #00C49F' }} />
+        </div>
+
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(107,76,255,0.1)', border: '1px solid rgba(107,76,255,0.35)', borderRadius: 24, padding: '6px 16px', fontSize: '0.78rem', color: '#c4b5fd', marginBottom: 32, fontWeight: 500 }}>
           <Zap size={12} color="#6b4cff" fill="#6b4cff" /> AI-powered database intelligence
         </div>
@@ -138,7 +165,7 @@ export default function LandingPage({ onLaunch }) {
         </div>
 
         {/* App preview window */}
-        <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 50px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(107,76,255,0.15)', background: '#12131a' }}>
+        <div className="card-3d" onMouseMove={handleTilt} onMouseLeave={resetTilt} style={{ maxWidth: 900, margin: '0 auto', borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 50px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(107,76,255,0.15)', background: '#12131a', transition: 'transform 0.2s, box-shadow 0.2s' }}>
           {/* Window chrome */}
           <div style={{ background: '#0d0e14', padding: '13px 18px', display: 'flex', alignItems: 'center', gap: 7, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#ff5f57' }} />
@@ -222,7 +249,7 @@ export default function LandingPage({ onLaunch }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 28 }}>
             {STEPS.map((s, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '32px 28px', position: 'relative', overflow: 'hidden' }}>
+              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '32px 28px', position: 'relative', overflow: 'hidden', animation: `float ${6 + i}s ease-in-out infinite ${i * 0.8}s`, transformStyle: 'preserve-3d' }}>
                 <div style={{ position: 'absolute', top: -20, right: -10, fontSize: '5rem', fontWeight: 900, color: s.color, opacity: 0.07, lineHeight: 1, userSelect: 'none' }}>{s.num}</div>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: `${s.color}18`, border: `1px solid ${s.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, fontSize: '1.2rem', fontWeight: 800, color: s.color }}>{s.num}</div>
                 <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: 10, letterSpacing: '-0.01em' }}>{s.title}</h3>
@@ -243,9 +270,20 @@ export default function LandingPage({ onLaunch }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
             {FEATURES.map((f, i) => (
               <div key={i}
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '28px', cursor: 'default', transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = f.color + '60'; e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 12px 32px ${f.color}18`; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '28px', cursor: 'default', transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s', transformStyle: 'preserve-3d' }}
+                onMouseMove={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  const x = (e.clientX - r.left) / r.width - 0.5;
+                  const y = (e.clientY - r.top) / r.height - 0.5;
+                  e.currentTarget.style.transform = `perspective(600px) rotateY(${x * 12}deg) rotateX(${-y * 8}deg) translateZ(8px)`;
+                  e.currentTarget.style.borderColor = f.color + '70';
+                  e.currentTarget.style.boxShadow = `0 16px 40px ${f.color}20`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'perspective(600px) rotateY(0) rotateX(0) translateZ(0)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}>
                 <div style={{ width: 42, height: 42, borderRadius: 11, background: `${f.color}18`, border: `1px solid ${f.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18, color: f.color }}>
                   {f.icon}
                 </div>
@@ -304,9 +342,9 @@ export default function LandingPage({ onLaunch }) {
             <span style={{ background: 'linear-gradient(135deg,#6b4cff,#00C49F)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>all you need is AgentDB</span>
           </h2>
           <p style={{ color: '#9ea4b0', fontSize: '1.05rem', marginBottom: 44, lineHeight: 1.7 }}>Start querying your database in plain English today. Free, forever.</p>
-          <button onClick={handleLaunch} style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', color: '#fff', border: 'none', borderRadius: 12, padding: '16px 44px', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, boxShadow: '0 10px 30px rgba(107,76,255,0.45)', letterSpacing: '-0.01em' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+          <button onClick={handleLaunch} style={{ background: 'linear-gradient(135deg,#6b4cff,#4f46e5)', color: '#fff', border: 'none', borderRadius: 12, padding: '16px 44px', fontSize: '1.1rem', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, boxShadow: '0 10px 30px rgba(107,76,255,0.45)', letterSpacing: '-0.01em', animation: 'pulse3d 3s ease-in-out infinite' }}
+            onMouseEnter={e => { e.currentTarget.style.animation = 'none'; e.currentTarget.style.transform = 'translateY(-3px) scale(1.03)'; }}
+            onMouseLeave={e => { e.currentTarget.style.animation = 'pulse3d 3s ease-in-out infinite'; e.currentTarget.style.transform = 'none'; }}>
             Launch AgentDB <ArrowRight size={18} />
           </button>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 24, flexWrap: 'wrap' }}>
