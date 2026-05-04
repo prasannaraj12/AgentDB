@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/chat/:path*", "destination": "https://agentdb-1.onrender.com/chat/:path*" },
+    { "source": "/databases/:path*", "destination": "https://agentdb-1.onrender.com/databases/:path*" },
+    { "source": "/export/:path*", "destination": "https://agentdb-1.onrender.com/export/:path*" },
+    { "source": "/report/:path*", "destination": "https://agentdb-1.onrender.com/report/:path*" },
+    { "source": "/suggestions/:path*", "destination": "https://agentdb-1.onrender.com/suggestions/:path*" },
+    { "source": "/share/:path*", "destination": "https://agentdb-1.onrender.com/share/:path*" }
+  ]
+}

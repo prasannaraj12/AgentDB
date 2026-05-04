@@ -76,13 +76,13 @@ export default defineConfig({
   preview: {
     host: true,
     proxy: {
-      '/chat': 'http://192.168.1.69:8000',
-      '/databases': 'http://192.168.1.69:8000',
-      '/export': 'http://192.168.1.69:8000',
-      '/report': 'http://192.168.1.69:8000',
-      '/suggestions': 'http://192.168.1.69:8000',
+      '/chat': 'https://agentdb-1.onrender.com',
+      '/databases': 'https://agentdb-1.onrender.com',
+      '/export': 'https://agentdb-1.onrender.com',
+      '/report': 'https://agentdb-1.onrender.com',
+      '/suggestions': 'https://agentdb-1.onrender.com',
       '/share': {
-        target: 'http://192.168.1.69:8000',
+        target: 'https://agentdb-1.onrender.com',
         bypass: (req) => {
           if (req.method === 'GET' && req.url.match(/^\/share\/[a-f0-9]+$/)) {
             return req.url;
