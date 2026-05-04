@@ -1,4 +1,5 @@
 {
+  "installCommand": "npm install --legacy-peer-deps",
   "rewrites": [
     { "source": "/chat/:path*", "destination": "https://agentdb-1.onrender.com/chat/:path*" },
     { "source": "/databases/:path*", "destination": "https://agentdb-1.onrender.com/databases/:path*" },
