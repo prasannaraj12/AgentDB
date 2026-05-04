@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Database, Upload, LayoutDashboard, Trash2, ChevronDown, RotateCcw, Mic, MicOff, FileText } from 'lucide-react';
+import { Send, Database, Upload, LayoutDashboard, Trash2, ChevronDown, RotateCcw, Mic, MicOff, FileText, Download } from 'lucide-react';
 import ChatMessage from './components/ChatMessage';
 import Dashboard from './components/Dashboard';
 import ReportModal from './components/ReportModal';
 import SharedDashboard from './components/SharedDashboard';
 import LandingPage from './components/LandingPage';
+import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import { useChat } from './hooks/useChat';
 import { useDatabase } from './hooks/useDatabase';
 import { useVoiceInput } from './hooks/useVoiceInput';
@@ -16,6 +17,20 @@ export default function App() {
 
   const [appMode, setAppMode] = useState('landing'); // 'landing' | 'app'
   const [input, setInput] = useState('');
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
 
   useEffect(() => {
     if (appMode === 'landing') {
@@ -27,6 +42,7 @@ export default function App() {
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [pinnedCharts, setPinnedCharts] = useState([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [dbOpen, setDbOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [suggestions, setSuggestions] = useState([]);
@@ -111,6 +127,11 @@ export default function App() {
           <button className="mac-btn" onClick={handleClearChat} title="Clear chat">
             <Trash2 size={13} />
           </button>
+          {installPrompt && (
+            <button className="mac-btn" onClick={handleInstall} title="Install App">
+              <Download size={13} /> Install
+            </button>
+          )}
           <span className="status-dot" style={{ marginLeft: 4 }} />
           <span style={{ fontSize: '0.74rem', color: '#6e6e73' }}>Online</span>
         </div>
@@ -119,7 +140,7 @@ export default function App() {
       {/* Body */}
       <div className="mac-body">
         {/* Sidebar */}
-        <aside className="sidebar">
+        <aside className={`sidebar${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
           <div className="sidebar-section">
             <div className="sidebar-section-header" onClick={() => setDbOpen(o => !o)}>
               <span className="sidebar-section-title">Database</span>
@@ -180,6 +201,16 @@ export default function App() {
           </div>
         </aside>
 
+        {/* Sidebar toggle — lives outside aside to avoid overflow:hidden clipping */}
+        <button
+          className="sidebar-toggle-btn"
+          onClick={() => setSidebarCollapsed(o => !o)}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          style={{ left: sidebarCollapsed ? '36px' : '240px' }}
+        >
+          <ChevronDown size={13} style={{ transform: sidebarCollapsed ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.25s' }} />
+        </button>
+
         {/* Main Panel */}
         <div className="main-panel">
           <main className="chat-container">
@@ -226,6 +257,7 @@ export default function App() {
         <Dashboard pinned={pinnedCharts} onUnpin={handleUnpinChart} onClose={() => setDashboardOpen(false)} />
       )}
       {reportOpen && <ReportModal onClose={() => setReportOpen(false)} />}
+      <PWAUpdatePrompt />
     </div>
   );
 }
