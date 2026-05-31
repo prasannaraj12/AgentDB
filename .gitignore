@@ -34,8 +34,8 @@ backend/ecommerce.db
 ecommerce.db
 
 # Local agent (offline mode — not for git)
-backend/local_agent.py
-backend/training/
+# backend/local_agent.py
+# backend/training/
 
 # OS
 .DS_Store
