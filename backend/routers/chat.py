@@ -12,6 +12,9 @@ router = APIRouter()
 # In-memory conversation history per session
 conversation_histories: dict = {}
 
+# Use local agent (no LLM API needed)
+USE_LOCAL_AGENT = True
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -126,35 +129,23 @@ def remove_rich_blobs(text: str) -> str:
 
 @router.post("", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
-    from agent import get_agent_executor, get_rag_context
+    from local_agent import handle_query, is_greeting, greeting_response
     try:
-        executor = get_agent_executor()
-        history = conversation_histories.get(request.session_id, [])
-
-        rag_context = get_rag_context(request.message)
-        rag_msg = ("system", f"Most relevant tables for this query:\n{rag_context}") if rag_context else None
-        messages_input = history + ([rag_msg] if rag_msg else []) + [("user", request.message)]
-
-        result = executor.invoke({"messages": messages_input})
-        all_messages = result["messages"]
-        raw_content = all_messages[-1].content
-
-        if isinstance(raw_content, list):
-            output_str = "".join(block.get("text", "") for block in raw_content if isinstance(block, dict))
+        if is_greeting(request.message):
+            result = greeting_response()
         else:
-            output_str = raw_content
+            result = handle_query(request.message)
 
-        rich_by_type = collect_rich_blobs(all_messages)
-        clean_text = remove_rich_blobs(output_str).strip()
-        for blob in rich_by_type.values():
-            clean_text = clean_text + "\n" + blob
+        response_text = result["response"]
+        trace = result.get("trace", [])
 
+        # Save to history
+        history = conversation_histories.get(request.session_id, [])
         history.append(("user", request.message))
-        history.append(("assistant", clean_text))
+        history.append(("assistant", response_text))
         conversation_histories[request.session_id] = history[-20:]
 
-        trace = extract_trace(all_messages)
-        return ChatResponse(response=clean_text, message_type="agent_response", trace=trace)
+        return ChatResponse(response=response_text, message_type="agent_response", trace=trace)
     except Exception as e:
         logger.error(f"Chat error: {e}")
         return ChatResponse(response=f"An error occurred: {str(e)}", message_type="error")
@@ -170,42 +161,52 @@ async def clear_history(session_id: str):
 async def chat_stream(request: ChatRequest):
     async def generate():
         try:
-            from agent import get_agent_executor, get_rag_context
-            executor = get_agent_executor()
-            history = conversation_histories.get(request.session_id, [])
+            from local_agent import handle_query, is_greeting, greeting_response
 
-            rag_context = get_rag_context(request.message)
-            rag_msg = ("system", f"Most relevant tables for this query:\n{rag_context}") if rag_context else None
-            messages_input = history + ([rag_msg] if rag_msg else []) + [("user", request.message)]
-
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, lambda: executor.invoke({"messages": messages_input}))
-            all_messages = result["messages"]
-            raw_content = all_messages[-1].content
-
-            if isinstance(raw_content, list):
-                output_str = "".join(block.get("text", "") for block in raw_content if isinstance(block, dict))
+            if is_greeting(request.message):
+                result = greeting_response()
             else:
-                output_str = raw_content
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(None, lambda: handle_query(request.message))
 
-            rich_by_type = collect_rich_blobs(all_messages)
-            clean_text = remove_rich_blobs(output_str).strip()
+            response_text = result["response"]
+            trace = result.get("trace", [])
 
+            # Split text and rich blobs
+            import re as _re
+            rich_blobs = []
+            clean_parts = []
+            for line in response_text.split("\n"):
+                stripped = line.strip()
+                if stripped.startswith("{") and stripped.endswith("}"):
+                    try:
+                        obj = json.loads(stripped)
+                        if obj.get("type") in ("chart", "mermaid", "explanation"):
+                            rich_blobs.append(stripped)
+                            continue
+                    except Exception:
+                        pass
+                clean_parts.append(line)
+
+            clean_text = "\n".join(clean_parts).strip()
+
+            # Stream text word by word
             words = clean_text.split(" ")
             for i, word in enumerate(words):
                 chunk = word + (" " if i < len(words) - 1 else "")
                 yield "data: " + json.dumps({"type": "token", "value": chunk}) + "\n\n"
-                await asyncio.sleep(0.03)
+                await asyncio.sleep(0.02)
 
-            for blob in rich_by_type.values():
+            # Send rich blobs
+            for blob in rich_blobs:
                 yield "data: " + json.dumps({"type": "rich", "value": blob}) + "\n\n"
 
-            full_output = clean_text + "\n" + "\n".join(rich_by_type.values())
+            # Save history
+            history = conversation_histories.get(request.session_id, [])
             history.append(("user", request.message))
-            history.append(("assistant", full_output))
+            history.append(("assistant", response_text))
             conversation_histories[request.session_id] = history[-20:]
 
-            trace = extract_trace(all_messages)
             yield "data: " + json.dumps({"type": "done", "trace": trace}) + "\n\n"
 
         except Exception as e:

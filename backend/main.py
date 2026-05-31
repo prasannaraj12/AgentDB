@@ -18,7 +18,10 @@ logger = logging.getLogger(__name__)
 
 has_api_key = os.getenv("GEMINI_API_KEY") is not None
 if has_api_key:
-    from agent import get_agent_executor  # noqa: F401 — warm up import
+    try:
+        from agent import get_agent_executor  # noqa: F401 — warm up import
+    except Exception:
+        pass
 
 from tools.db_tools import set_db_path
 

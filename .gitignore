@@ -31,6 +31,11 @@ frontend/.cache/
 backend/databases/*.db
 backend/databases/shares.json
 backend/ecommerce.db
+ecommerce.db
+
+# Local agent (offline mode — not for git)
+backend/local_agent.py
+backend/training/
 
 # OS
 .DS_Store

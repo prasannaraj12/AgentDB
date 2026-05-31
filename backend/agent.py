@@ -167,10 +167,9 @@ def get_agent_executor():
     api_key = os.getenv("GEMINI_API_KEY", "dummy")
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         temperature=0,
         google_api_key=api_key,
-        thinking_budget=1024,
     )
 
     # Build RAG index from current schema

@@ -1,5 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Database, BarChart2, GitBranch, Zap, ChevronDown, Star, ArrowRight, Table, Brain, Share2, CheckCircle, TrendingUp, PieChart, Mic, Download, History, Shield } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Database, BarChart2, GitBranch, Zap, ChevronDown, Star, ArrowRight, Table, Brain, Share2, CheckCircle, TrendingUp, PieChart, Mic, Download, History, Shield, Play, Terminal, Cpu, Globe } from 'lucide-react';
+
+/* ── Live Query Prompts ───────────────────────────────── */
+const LIVE_QUERIES = [
+  'Show top 10 customers by revenue',
+  'Plot monthly sales trend as a line chart',
+  'Which product category has the highest margin?',
+  'Find all orders above $500 in Q4',
+  'Show a pie chart of sales by region',
+  'Who are the top 5 artists by track count?',
+  'Compare revenue across all product categories',
+  'Show me a bar chart of rentals by film rating',
+];
+
+/* ── Animated Stats ───────────────────────────────────── */
+const STATS = [
+  { value: 500, suffix: '+', label: 'Developers', color: '#6b4cff' },
+  { value: 12, suffix: 'K+', label: 'Queries Run', color: '#00C49F' },
+  { value: 4, suffix: ' DBs', label: 'Built-in Datasets', color: '#FFBB28' },
+  { value: 99, suffix: '%', label: 'Accuracy', color: '#FF8042' },
+];
+
+/* ── Schema Preview Data ──────────────────────────────── */
+const SCHEMA_TABLES = [
+  { name: 'customers', cols: ['id', 'name', 'email', 'country'], color: '#6b4cff' },
+  { name: 'orders', cols: ['id', 'customer_id', 'total', 'date'], color: '#00C49F' },
+  { name: 'products', cols: ['id', 'name', 'category', 'price'], color: '#FFBB28' },
+  { name: 'tracks', cols: ['id', 'title', 'artist_id', 'genre'], color: '#FF8042' },
+];
 
 /* ── Data ─────────────────────────────────────────────── */
 const FEATURES = [
@@ -45,6 +73,173 @@ const CHART_BARS = [
   { h: 55, color: '#8884d8', label: 'Home' },
   { h: 72, color: '#6b4cff', label: 'Beauty' },
 ];
+
+/* ── Typewriter Hook ──────────────────────────────────── */
+function useTypewriter(texts, speed = 55, pause = 1800) {
+  const [display, setDisplay] = useState('');
+  const [idx, setIdx] = useState(0);
+  const [charIdx, setCharIdx] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const current = texts[idx];
+    let timeout;
+    if (!deleting && charIdx < current.length) {
+      timeout = setTimeout(() => setCharIdx(c => c + 1), speed);
+    } else if (!deleting && charIdx === current.length) {
+      timeout = setTimeout(() => setDeleting(true), pause);
+    } else if (deleting && charIdx > 0) {
+      timeout = setTimeout(() => setCharIdx(c => c - 1), speed / 2);
+    } else if (deleting && charIdx === 0) {
+      setDeleting(false);
+      setIdx(i => (i + 1) % texts.length);
+    }
+    setDisplay(current.slice(0, charIdx));
+    return () => clearTimeout(timeout);
+  }, [charIdx, deleting, idx, texts, speed, pause]);
+
+  return display;
+}
+
+/* ── Animated Counter ────────────────────────────────── */
+function AnimatedCounter({ value, suffix, duration = 1800 }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        const start = Date.now();
+        const tick = () => {
+          const elapsed = Date.now() - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setCount(Math.floor(eased * value));
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    }, { threshold: 0.5 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [value, duration]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
+}
+
+/* ── Live Query Terminal ─────────────────────────────── */
+function LiveQueryTerminal() {
+  const query = useTypewriter(LIVE_QUERIES, 50, 2000);
+  const [sqlLines] = useState([
+    'SELECT c.name, SUM(o.total) AS revenue',
+    'FROM customers c JOIN orders o ON c.id = o.customer_id',
+    'GROUP BY c.name ORDER BY revenue DESC LIMIT 10;',
+  ]);
+  const [showResult, setShowResult] = useState(false);
+
+  useEffect(() => {
+    setShowResult(false);
+    const t = setTimeout(() => setShowResult(true), 1200);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  return (
+    <div style={{ background: 'rgba(10,10,18,0.9)', border: '1px solid rgba(107,76,255,0.3)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(107,76,255,0.1)', maxWidth: 560, margin: '0 auto' }}>
+      {/* Terminal chrome */}
+      <div style={{ background: 'rgba(0,0,0,0.4)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
+        <div style={{ marginLeft: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Terminal size={11} color="#555" />
+          <span style={{ fontSize: '0.68rem', color: '#444', letterSpacing: '0.02em' }}>AgentDB — Natural Language Interface</span>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#00C49F', boxShadow: '0 0 6px #00C49F', animation: 'pulse2 2s infinite' }} />
+          <span style={{ fontSize: '0.62rem', color: '#00C49F', fontWeight: 600 }}>LIVE</span>
+        </div>
+      </div>
+
+      {/* NL Input */}
+      <div style={{ padding: '14px 16px 10px' }}>
+        <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Natural Language Query</div>
+        <div style={{ background: 'rgba(107,76,255,0.08)', border: '1px solid rgba(107,76,255,0.25)', borderRadius: 8, padding: '10px 14px', fontSize: '0.85rem', color: '#c4b5fd', minHeight: 38, display: 'flex', alignItems: 'center' }}>
+          <span>{query}</span>
+          <span style={{ display: 'inline-block', width: 2, height: '1em', background: '#6b4cff', marginLeft: 2, animation: 'blink 0.7s step-end infinite', verticalAlign: 'middle' }} />
+        </div>
+      </div>
+
+      {/* Arrow */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 16px' }}>
+        <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(107,76,255,0.4), transparent)' }} />
+        <div style={{ fontSize: '0.65rem', color: '#6b4cff', fontWeight: 700, letterSpacing: '0.06em' }}>AI → SQL</div>
+        <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(0,196,159,0.4))' }} />
+      </div>
+
+      {/* SQL Output */}
+      <div style={{ padding: '6px 16px 10px' }}>
+        <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Generated SQL</div>
+        <div style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(0,196,159,0.2)', borderRadius: 8, padding: '10px 14px', fontFamily: "'SF Mono','Fira Code',monospace", fontSize: '0.75rem', lineHeight: 1.7 }}>
+          {sqlLines.map((line, i) => (
+            <div key={i} style={{ color: i === 0 ? '#a6e3a1' : i === 1 ? '#89b4fa' : '#cba6f7' }}>{line}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Result preview */}
+      <div style={{ padding: '0 16px 14px', opacity: showResult ? 1 : 0, transition: 'opacity 0.5s ease', transform: showResult ? 'translateY(0)' : 'translateY(6px)' }}>
+        <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Results</div>
+        <div style={{ background: 'rgba(0,196,159,0.05)', border: '1px solid rgba(0,196,159,0.15)', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '6px 12px', background: 'rgba(0,196,159,0.08)', fontSize: '0.65rem', color: '#00C49F', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span>name</span><span>revenue</span>
+          </div>
+          {[['Eleanor Hunt', '$211.55'], ['Karl Schnyder', '$195.10'], ['Astrid Gruber', '$183.15']].map(([n, v], i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '5px 12px', borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: '0.75rem' }}>
+              <span style={{ color: '#ccc' }}>{n}</span>
+              <span style={{ color: '#00C49F', fontWeight: 600 }}>{v}</span>
+            </div>
+          ))}
+          <div style={{ padding: '5px 12px', borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: '0.65rem', color: '#444', fontStyle: 'italic' }}>+ 7 more rows · 0.04s</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Schema Explorer ─────────────────────────────────── */
+function SchemaExplorer() {
+  const [activeTable, setActiveTable] = useState(0);
+  const t = SCHEMA_TABLES[activeTable];
+
+  return (
+    <div style={{ background: 'rgba(10,10,18,0.85)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, overflow: 'hidden', maxWidth: 320 }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 7 }}>
+        <Database size={12} color="#6b4cff" />
+        <span style={{ fontSize: '0.72rem', color: '#a78bfa', fontWeight: 600 }}>ecommerce.db</span>
+        <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: '#333', background: 'rgba(107,76,255,0.1)', border: '1px solid rgba(107,76,255,0.2)', borderRadius: 4, padding: '1px 6px' }}>4 tables</span>
+      </div>
+      <div style={{ display: 'flex', gap: 4, padding: '8px 10px', flexWrap: 'wrap' }}>
+        {SCHEMA_TABLES.map((tbl, i) => (
+          <button key={i} onClick={() => setActiveTable(i)} style={{ background: activeTable === i ? `${tbl.color}20` : 'transparent', border: `1px solid ${activeTable === i ? tbl.color + '50' : 'rgba(255,255,255,0.07)'}`, borderRadius: 6, padding: '3px 9px', fontSize: '0.68rem', color: activeTable === i ? tbl.color : '#555', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'monospace' }}>
+            {tbl.name}
+          </button>
+        ))}
+      </div>
+      <div style={{ padding: '4px 14px 14px' }}>
+        <div style={{ fontSize: '0.62rem', color: '#444', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Columns</div>
+        {t.cols.map((col, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: i < t.cols.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: i === 0 ? '#FFBB28' : t.color, flexShrink: 0 }} />
+            <span style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#ccc' }}>{col}</span>
+            <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: '#444', fontFamily: 'monospace' }}>{i === 0 ? 'PK' : i === 1 && col.includes('_id') ? 'FK' : 'TEXT'}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ── FAQ Item ─────────────────────────────────────────── */
 function FAQItem({ q, a }) {
@@ -370,6 +565,33 @@ export default function LandingPage({ onLaunch }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <CheckCircle size={12} color="#00C49F" />
             <span style={{ color: '#48484a', fontSize: '0.77rem' }}>Free forever · No credit card</span>
+          </div>
+        </div>
+
+        {/* ── LIVE TERMINAL + SCHEMA EXPLORER ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, maxWidth: 920, margin: '0 auto 64px', textAlign: 'left' }}>
+          <div>
+            <div style={{ fontSize: '0.7rem', color: '#555', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Terminal size={11} color="#6b4cff" /> Live Query Demo
+            </div>
+            <LiveQueryTerminal />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.7rem', color: '#555', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Database size={11} color="#00C49F" /> Schema Explorer
+            </div>
+            <SchemaExplorer />
+            {/* Animated stats below schema */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
+              {STATS.map((s, i) => (
+                <div key={i} style={{ ...glassCard, padding: '12px 14px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: s.color, letterSpacing: '-0.03em', lineHeight: 1 }}>
+                    <AnimatedCounter value={s.value} suffix={s.suffix} />
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: '#555', marginTop: 4, fontWeight: 500 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
