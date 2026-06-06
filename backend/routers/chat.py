@@ -139,13 +139,35 @@ async def chat_endpoint(request: ChatRequest):
         response_text = result["response"]
         trace = result.get("trace", [])
 
+        # Extract rich blobs from sentinel-separated response
+        BLOB_SEP = "\n---BLOB---\n"
+        rich_blobs = []
+        clean_parts = []
+        for segment in response_text.split(BLOB_SEP):
+            segment = segment.strip()
+            if not segment:
+                continue
+            if segment.startswith("{") and segment.endswith("}"):
+                try:
+                    obj = json.loads(segment)
+                    if obj.get("type") in ("chart", "mermaid", "explanation"):
+                        rich_blobs.append(segment)
+                        continue
+                except Exception:
+                    pass
+            clean_parts.append(segment)
+
+        clean_text = "\n".join(clean_parts).strip()
+        # Keep blobs inline without extra parsing — frontend will extract them
+        final_response = response_text
+
         # Save to history
         history = conversation_histories.get(request.session_id, [])
         history.append(("user", request.message))
-        history.append(("assistant", response_text))
+        history.append(("assistant", final_response))
         conversation_histories[request.session_id] = history[-20:]
 
-        return ChatResponse(response=response_text, message_type="agent_response", trace=trace)
+        return ChatResponse(response=final_response, message_type="agent_response", trace=trace)
     except Exception as e:
         logger.error(f"Chat error: {e}")
         return ChatResponse(response=f"An error occurred: {str(e)}", message_type="error")
@@ -172,21 +194,23 @@ async def chat_stream(request: ChatRequest):
             response_text = result["response"]
             trace = result.get("trace", [])
 
-            # Split text and rich blobs
-            import re as _re
+            # Split text and rich blobs using sentinel ---BLOB---
+            BLOB_SEP = "\n---BLOB---\n"
             rich_blobs = []
             clean_parts = []
-            for line in response_text.split("\n"):
-                stripped = line.strip()
-                if stripped.startswith("{") and stripped.endswith("}"):
+            for segment in response_text.split(BLOB_SEP):
+                segment = segment.strip()
+                if not segment:
+                    continue
+                if segment.startswith("{") and segment.endswith("}"):
                     try:
-                        obj = json.loads(stripped)
+                        obj = json.loads(segment)
                         if obj.get("type") in ("chart", "mermaid", "explanation"):
-                            rich_blobs.append(stripped)
+                            rich_blobs.append(segment)
                             continue
                     except Exception:
                         pass
-                clean_parts.append(line)
+                clean_parts.append(segment)
 
             clean_text = "\n".join(clean_parts).strip()
 

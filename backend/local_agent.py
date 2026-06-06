@@ -255,6 +255,16 @@ def handle_query(user_message: str) -> dict:
     Process a natural language query without any LLM API.
     Returns: { response: str, trace: list }
     """
+    from tools.db_tools import DB_PATH as _current_db_path
+    import os
+
+    # Guard: make sure the DB file actually exists
+    if not os.path.exists(_current_db_path):
+        return {
+            "response": f"Database file not found at `{_current_db_path}`. Please select a database from the sidebar.",
+            "trace": []
+        }
+
     db_name = _active_db_name()
     intent = _detect_intent(user_message)
     chart_type = _detect_chart(user_message)
@@ -264,6 +274,8 @@ def handle_query(user_message: str) -> dict:
     if intent == "diagram":
         schema_str = get_schema()
         schema = json.loads(schema_str)
+        if "error" in schema:
+            return {"response": f"Could not read schema: {schema['error']}", "trace": trace}
         trace.append({"step": "tool_call", "tool": "get_schema", "input": {}})
         trace.append({"step": "tool_result", "tool": "get_schema", "output": "Schema retrieved"})
 
@@ -271,7 +283,8 @@ def handle_query(user_message: str) -> dict:
         diagram_json = generate_flowchart(mermaid)
         insight_json = explain_data(f"ER diagram generated for {db_name} database with {sum(len(t) for t in schema.values())} tables.")
 
-        response = f"Here is the ER diagram for the **{db_name}** database.\n{diagram_json}\n{insight_json}"
+        BLOB_SEP = "\n---BLOB---\n"
+        response = f"Here is the ER diagram for the **{db_name}** database.{BLOB_SEP}{diagram_json}{BLOB_SEP}{insight_json}"
         return {"response": response, "trace": trace}
 
     # ── Find best training match ───────────────────────────────────────────────
@@ -287,6 +300,8 @@ def handle_query(user_message: str) -> dict:
         # Fallback: rule-based SQL
         schema_str = get_schema()
         schema = json.loads(schema_str)
+        if "error" in schema:
+            return {"response": f"Could not read schema: {schema['error']}", "trace": trace}
         sql = _rule_based_sql(user_message, schema)
         trace.append({"step": "tool_result", "tool": "match_query", "output": f"No match (score={score:.2f}), using rule-based SQL"})
         logger.info(f"No training match (score={score:.3f}), using rule-based fallback")
@@ -326,17 +341,15 @@ def handle_query(user_message: str) -> dict:
     insight_json = explain_data(insight_text)
 
     # ── Build response ────────────────────────────────────────────────────────
-    if chart_type and chart_json:
-        summary = f"Here are the results for: **{user_message}**"
-    else:
-        summary = f"Here are the results for: **{user_message}**"
+    summary = f"Here are the results for: **{user_message}**"
 
+    # Use a safe sentinel to separate text from rich blobs
+    BLOB_SEP = "\n---BLOB---\n"
     parts = [summary]
     if chart_json:
-        parts.append(chart_json)
-    parts.append(insight_json)
-
-    return {"response": "\n".join(parts), "trace": trace}
+        parts.append(BLOB_SEP + chart_json)
+    parts.append(BLOB_SEP + insight_json)
+    return {"response": "".join(parts), "trace": trace}
 
 
 # ── Greeting handler ──────────────────────────────────────────────────────────
