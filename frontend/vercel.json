@@ -1,6 +1,12 @@
 {
   "installCommand": "npm install --legacy-peer-deps",
   "rewrites": [
+    { "source": "/app/:path*", "destination": "/index.html" },
+    {
+      "source": "/share/:token",
+      "has": [{ "type": "header", "key": "accept", "value": ".*text/html.*" }],
+      "destination": "/index.html"
+    },
     { "source": "/chat/:path*", "destination": "https://agentdb-1.onrender.com/chat/:path*" },
     { "source": "/databases/:path*", "destination": "https://agentdb-1.onrender.com/databases/:path*" },
     { "source": "/export/:path*", "destination": "https://agentdb-1.onrender.com/export/:path*" },

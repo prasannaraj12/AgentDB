@@ -2,6 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const shareBypass = (req) => {
+  const isPage = (req.headers.accept || '').includes('text/html');
+  if (req.method === 'GET' && isPage && /^\/share\/[a-f0-9]+$/.test(req.url)) {
+    return req.url; // serve the SPA, which renders SharedDashboard
+  }
+};
+
 export default defineConfig({
   plugins: [
     react(),
@@ -63,13 +70,9 @@ export default defineConfig({
       '/suggestions': 'http://localhost:8000',
       '/share': {
         target: 'http://localhost:8000',
-        bypass: (req) => {
-          // Only proxy POST (create) and GET with token to backend API
-          // Let the frontend handle /share/:token page rendering via SPA
-          if (req.method === 'GET' && req.url.match(/^\/share\/[a-f0-9]+$/)) {
-            return req.url; // serve frontend SPA
-          }
-        }
+        // Browser navigations to /share/:token get the SPA page; the page's own
+        // fetch() of the same URL (Accept: */*) is proxied to the backend API.
+        bypass: shareBypass,
       },
     }
   },
@@ -83,11 +86,7 @@ export default defineConfig({
       '/suggestions': 'https://agentdb-1.onrender.com',
       '/share': {
         target: 'https://agentdb-1.onrender.com',
-        bypass: (req) => {
-          if (req.method === 'GET' && req.url.match(/^\/share\/[a-f0-9]+$/)) {
-            return req.url;
-          }
-        }
+        bypass: shareBypass,
       },
     }
   }

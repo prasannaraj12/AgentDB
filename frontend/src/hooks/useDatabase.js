@@ -1,71 +1,79 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+async function postJson(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `Request failed (${res.status})`);
+  return data;
+}
 
 export function useDatabase(onMessage) {
   const [databases, setDatabases] = useState([]);
   const [activeDb, setActiveDb] = useState('ecommerce.db');
   const [attachedDbs, setAttachedDbs] = useState({});
+  const [connection, setConnection] = useState('checking'); // 'checking' | 'online' | 'offline'
+  const [version, setVersion] = useState(0); // bumps whenever the database context changes
 
-  useEffect(() => { fetchDatabases(); }, []);
-
-  const fetchDatabases = async () => {
+  const fetchDatabases = useCallback(async () => {
     try {
-      const [dbRes, attRes] = await Promise.all([
-        fetch('/databases'),
-        fetch('/databases/attached'),
-      ]);
+      const [dbRes, attRes] = await Promise.all([fetch('/databases'), fetch('/databases/attached')]);
+      if (!dbRes.ok || !attRes.ok) throw new Error('backend error');
       const { databases: dbs } = await dbRes.json();
       const { attached } = await attRes.json();
       setDatabases(dbs || []);
       setAttachedDbs(attached || {});
-    } catch (e) {
-      console.error('fetchDatabases:', e);
+      setConnection('online');
+    } catch {
+      setConnection('offline');
     }
-  };
+  }, []);
 
-  const selectDb = async (filename) => {
-    await fetch('/databases/select', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename }),
-    });
+  useEffect(() => {
+    // Initial load of the database list from the backend.
+    fetchDatabases();
+  }, [fetchDatabases]);
+
+  const selectDb = useCallback(async (filename) => {
+    await postJson('/databases/select', { filename });
     setActiveDb(filename);
+    setVersion((v) => v + 1);
     onMessage?.(`Switched to **${filename}**. How can I help you?`);
-  };
+  }, [onMessage]);
 
-  const attachDb = async (filename) => {
-    const res = await fetch('/databases/attach', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename }),
-    });
-    const data = await res.json();
+  const attachDb = useCallback(async (filename) => {
+    const data = await postJson('/databases/attach', { filename });
     setAttachedDbs((prev) => ({ ...prev, [data.alias]: filename }));
+    setVersion((v) => v + 1);
     onMessage?.(`Attached **${filename}** as \`${data.alias}\`. You can now query across both databases.`);
-  };
+  }, [onMessage]);
 
-  const detachDb = async (alias) => {
-    await fetch('/databases/detach', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ alias }),
-    });
+  const detachDb = useCallback(async (alias) => {
+    await postJson('/databases/detach', { filename: '', alias });
     setAttachedDbs((prev) => {
       const next = { ...prev };
       delete next[alias];
       return next;
     });
-  };
+    setVersion((v) => v + 1);
+  }, []);
 
-  const uploadDb = async (file) => {
+  const uploadDb = useCallback(async (file) => {
     const formData = new FormData();
     formData.append('file', file);
     const res = await fetch('/databases/upload', { method: 'POST', body: formData });
-    if (res.ok) {
-      const data = await res.json();
-      await fetchDatabases();
-      await selectDb(data.filename || file.name);
-    }
-  };
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Upload failed (${res.status})`);
+    await fetchDatabases();
+    await selectDb(data.filename || file.name);
+    return data;
+  }, [fetchDatabases, selectDb]);
 
-  return { databases, activeDb, attachedDbs, fetchDatabases, selectDb, attachDb, detachDb, uploadDb };
+  return {
+    databases, activeDb, attachedDbs, connection, version,
+    fetchDatabases, selectDb, attachDb, detachDb, uploadDb,
+  };
 }

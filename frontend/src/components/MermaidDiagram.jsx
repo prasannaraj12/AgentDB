@@ -1,27 +1,48 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
-mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+mermaid.initialize({
+  startOnLoad: false,
+  securityLevel: 'strict',
+  theme: 'base',
+  fontFamily: 'DM Sans, Inter, sans-serif',
+  themeVariables: {
+    primaryColor: '#ece9ff',
+    primaryBorderColor: '#7565e8',
+    primaryTextColor: '#202124',
+    lineColor: '#9a8ef0',
+    secondaryColor: '#fbe7cb',
+    tertiaryColor: '#f4f3f1',
+    fontSize: '13px',
+  },
+  er: { useMaxWidth: true },
+});
 
+/** Renders Mermaid diagrams; falls back to the raw source (as text, never HTML) if parsing fails. */
 export default function MermaidDiagram({ content }) {
   const ref = useRef(null);
+  const reactId = useId();
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!content || !ref.current) return;
-    const render = async () => {
-      try {
-        const safe = content.replace(
-          /\[([^\]]*)\]/g,
-          (_, inner) => '[' + inner.replace(/\(/g, ' ').replace(/\)/g, ' ') + ']'
-        );
-        const { svg } = await mermaid.render('mermaid-svg-' + Date.now(), safe);
+    let cancelled = false;
+    const safe = content.replace(/\[([^\]]*)\]/g, (_, inner) => '[' + inner.replace(/[()]/g, ' ') + ']');
+    const id = 'mmd-' + reactId.replace(/[^a-zA-Z0-9]/g, '') + '-' + Date.now();
+    mermaid.render(id, safe)
+      .then(({ svg }) => {
+        if (cancelled || !ref.current) return;
         ref.current.innerHTML = svg;
-      } catch {
-        ref.current.innerHTML = `<pre style="font-size:0.78rem;color:#3a3a3c;white-space:pre-wrap;padding:8px">${content}</pre>`;
-      }
-    };
-    render();
-  }, [content]);
+        setFailed(false);
+      })
+      .catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; };
+  }, [content, reactId]);
 
-  return <div className="mermaid-diagram" ref={ref} />;
+  return (
+    <div className="ag-mermaid">
+      <div ref={ref} className="ag-mermaid-svg" hidden={failed} />
+      {failed && <pre className="ag-mermaid-src">{content}</pre>}
+    </div>
+  );
 }

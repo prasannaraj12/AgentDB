@@ -165,18 +165,25 @@ Frontend runs on `http://localhost:5173`
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx              # Root layout + orchestration
+│   │   ├── App.jsx              # Routes: landing (/), app shell (/app/*), shared dashboards (/share/:token)
+│   │   ├── pages/               # Dashboard, AI Workspace, Insights, Reports, Query History,
+│   │   │                        # Database Explorer, Tables & Schema, ER Diagrams, Settings
 │   │   ├── hooks/
-│   │   │   ├── useChat.js       # SSE streaming + message state
-│   │   │   ├── useDatabase.js   # DB select / attach / upload logic
+│   │   │   ├── useChat.js       # SSE streaming, message state, per-query outcome tracking
+│   │   │   ├── useDatabase.js   # DB select / attach / detach / upload + connection status
+│   │   │   ├── useReport.js     # /report/generate data (schema, row counts, stats)
 │   │   │   └── useVoiceInput.js # Speech recognition hook
+│   │   ├── lib/                 # Router, query-history store, insight/ER builders, SQL highlighter
+│   │   ├── styles/              # Design system (agentdb.css), workspace.css, pages.css
 │   │   └── components/
-│   │       ├── ChatMessage.jsx  # Message renderer (text + rich blobs)
+│   │       ├── shell/           # Sidebar, top bar with command search, logo
+│   │       ├── dashboard/       # Query activity chart, recent queries, insight cards
+│   │       ├── workspace/       # SQL block (highlighting, copy, expand)
+│   │       ├── ui/              # Panels, buttons, status dots, empty states
+│   │       ├── ChatMessage.jsx  # AI answer layout: summary → SQL → result → diagram → insights
 │   │       ├── ChartRenderer.jsx    # Recharts bar/line/pie/scatter
 │   │       ├── MermaidDiagram.jsx   # Mermaid.js ER + flowcharts
-│   │       ├── DataTable.jsx        # Paginated query results table
-│   │       ├── Dashboard.jsx        # Pinned charts grid
-│   │       ├── ReportModal.jsx      # Auto-generated DB report modal
+│   │       ├── DataTable.jsx        # Paginated results table with CSV export
 │   │       └── SharedDashboard.jsx  # Public shareable dashboard view
 │   └── package.json
 │
