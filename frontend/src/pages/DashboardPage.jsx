@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { Database, Clock, Sparkles } from 'lucide-react';
+import { Database, Clock, Sparkles, ArrowUpRight } from 'lucide-react';
 import { useApp } from '../lib/appContext';
 import { useQueryHistory, successStats, dailyCounts } from '../lib/queryHistory';
 import { databaseTotals, formatRelative, numberFmt } from '../lib/dbInsights';
 import { navigate, ROUTES } from '../lib/router';
-import { Panel, RoundAction } from '../components/ui/Primitives';
+import { Panel, RoundAction, StatusDot } from '../components/ui/Primitives';
 import QueryActivity from '../components/dashboard/QueryActivity';
 import RecentQueries from '../components/dashboard/RecentQueries';
 import { InsightList } from '../components/dashboard/insights';
@@ -73,35 +73,46 @@ export default function DashboardPage() {
         </div>
 
         <div className="ag-hero-side">
-          <div className="ag-pills">
-            <div className="ag-time-pill is-dark">
-              <span className="ag-time-icon is-accent"><Database size={15} /></span>
-              <div className="ag-time-main">
-                <span className="ag-time-value">{weekCount} {weekCount === 1 ? 'query' : 'queries'}</span>
-                <span className="ag-time-sub">Last 7 days</span>
+          {lastQuery ? (
+            <div className="ag-pills">
+              <div className="ag-time-pill is-dark">
+                <span className="ag-time-icon is-accent"><Database size={15} /></span>
+                <div className="ag-time-main">
+                  <span className="ag-time-value">{numberFmt.format(history.length)} {history.length === 1 ? 'query' : 'queries'}</span>
+                  <span className="ag-time-sub">{weekCount} in the last 7 days</span>
+                </div>
+                <span className="ag-time-tag">Total</span>
               </div>
-              <span className="ag-time-tag">Asked</span>
-            </div>
-            <div className="ag-time-pill">
-              <span className="ag-time-icon"><Clock size={15} /></span>
-              <div className="ag-time-main">
-                <span className="ag-time-value">{lastQuery ? formatRelative(lastQuery.ts) : 'No queries'}</span>
-                <span className="ag-time-sub">Last query</span>
+              <div className="ag-time-pill">
+                <span className="ag-time-icon"><Clock size={15} /></span>
+                <div className="ag-time-main">
+                  <span className="ag-time-value">{formatRelative(lastQuery.ts)}</span>
+                  <span className="ag-time-sub" title={lastQuery.query}>Last query · {lastQuery.query}</span>
+                </div>
+                <span className="ag-time-tag"><StatusDot status={lastQuery.status} /></span>
               </div>
-              <span className="ag-time-tag">Activity</span>
             </div>
-          </div>
+          ) : (
+            <div className="ag-pills">
+              <button type="button" className="ag-time-pill is-empty" onClick={() => navigate(ROUTES.workspace)}>
+                <span className="ag-time-icon is-accent"><Clock size={15} /></span>
+                <div className="ag-time-main">
+                  <span className="ag-time-value">No queries yet</span>
+                  <span className="ag-time-sub">Ask your first question to start tracking activity</span>
+                </div>
+                <span className="ag-time-go"><ArrowUpRight size={15} /></span>
+              </button>
+            </div>
+          )}
 
           <div className="ag-promo">
-            <span className="ag-notch ag-notch-tl">
-              <span className="ag-chip"><Sparkles size={11} /> AI</span>
-            </span>
             <span className="ag-promo-art" aria-hidden="true" />
+            <div className="ag-promo-top">
+              <span className="ag-promo-chip"><Sparkles size={11} /> AI</span>
+              <RoundAction onClick={() => navigate(ROUTES.workspace)} label="Open AI Workspace" />
+            </div>
             <h2 className="ag-promo-title">Your data.<br />Your intelligence.</h2>
             <p className="ag-promo-text">Turn natural-language questions into actionable database insights.</p>
-            <span className="ag-promo-action">
-              <RoundAction onClick={() => navigate(ROUTES.workspace)} label="Open AI Workspace" />
-            </span>
           </div>
         </div>
       </Panel>
