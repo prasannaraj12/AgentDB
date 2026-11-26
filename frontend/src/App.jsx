@@ -21,6 +21,7 @@ import { AppContext } from './lib/appContext';
 import './styles/agentdb.css';
 import './styles/workspace.css';
 import './styles/pages.css';
+import './styles/core.css';
 
 const PAGES = {
   [ROUTES.dashboard]: DashboardPage,

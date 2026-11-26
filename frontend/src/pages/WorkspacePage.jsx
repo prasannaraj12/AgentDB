@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Mic, MicOff, Plus, Upload, X, Database, History, Sparkles, LoaderCircle } from 'lucide-react';
+import { ArrowUp, Mic, MicOff, Plus, Upload, X, Database, History, LoaderCircle } from 'lucide-react';
 import ChatMessage from '../components/ChatMessage';
+import IntelligenceCore from '../components/workspace/IntelligenceCore';
 import { useApp } from '../lib/appContext';
 import { useQueryHistory } from '../lib/queryHistory';
 import { useVoiceInput } from '../hooks/useVoiceInput';
@@ -145,7 +146,7 @@ export default function WorkspacePage() {
         <div className="ag-thread" aria-live="polite">
           {empty ? (
             <div className="ag-welcome">
-              <span className="ag-welcome-icon"><Sparkles size={20} /></span>
+              <IntelligenceCore />
               <h1>Ask anything about {db.activeDb}</h1>
               <p>AgentDB writes the SQL, runs it read-only, and answers with tables, charts, diagrams and insights.</p>
               {suggestions.length > 0 && (

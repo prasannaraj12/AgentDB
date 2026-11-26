@@ -54,8 +54,7 @@
 .ag-thread { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #dcd9d4 transparent; }
 .ag-thread-inner { max-width: 920px; margin: 0 auto; padding: 22px 22px 12px; display: flex; flex-direction: column; gap: 20px; }
 
-.ag-welcome { max-width: 640px; margin: 0 auto; padding: 9vh 24px 24px; text-align: center; animation: ag-rise .45s var(--ag-ease) both; }
-.ag-welcome-icon { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 15px; background: var(--ag-dark); color: #fff; margin-bottom: 14px; box-shadow: 0 10px 24px -12px rgba(0,0,0,.5); }
+.ag-welcome { max-width: 640px; margin: 0 auto; padding: 6vh 24px 24px; text-align: center; animation: ag-rise .45s var(--ag-ease) both; }
 .ag-welcome h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 6px; }
 .ag-welcome p { font-size: 13px; color: var(--ag-text-2); margin: 0 0 20px; }
 .ag-suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
