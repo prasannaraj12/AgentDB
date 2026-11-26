@@ -27,6 +27,27 @@ export function usePath() {
   return useSyncExternalStore(subscribe, getPath, getPath);
 }
 
+/** How the current document was loaded: 'navigate' | 'reload' | 'back_forward' | 'prerender'. */
+export function documentNavigationType() {
+  const entry = typeof performance !== 'undefined' && performance.getEntriesByType?.('navigation')?.[0];
+  if (entry?.type) return entry.type;
+  // Legacy Navigation Timing (Level 1) fallback.
+  return performance?.navigation?.type === 1 ? 'reload' : 'navigate';
+}
+
+/**
+ * Startup routing, run once before the first render. A browser refresh (Ctrl+R / F5) of an
+ * app page returns to the landing page; typed URLs, links and back/forward keep their route,
+ * so /app/workspace can still be opened directly. Only the URL changes: database selection
+ * and the conversation stay in storage and are restored on the next launch.
+ */
+export function applyStartupRoute() {
+  const path = window.location.pathname;
+  if (documentNavigationType() === 'reload' && (path === '/app' || path.startsWith('/app/'))) {
+    window.history.replaceState({}, '', '/');
+  }
+}
+
 export const ROUTES = {
   dashboard: '/app/dashboard',
   workspace: '/app/workspace',

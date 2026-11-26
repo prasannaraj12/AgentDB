@@ -162,8 +162,8 @@ export default function App() {
   const path = usePath();
   let content;
   if (path.startsWith('/share/')) content = <SharedDashboard />;
-  else if (path === '/welcome') content = <Landing />; // product landing page, kept for the marketing site
-  else content = <AgentDBApp path={path} />; // '/', '/app', '/app/*' — AI Workspace is the default
+  else if (path === '/app' || path.startsWith('/app/')) content = <AgentDBApp path={path} />; // '/app' → AI Workspace
+  else content = <Landing />; // '/', '/welcome' and any other path: the public landing page
   return (
     <>
       {content}
