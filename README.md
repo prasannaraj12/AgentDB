@@ -35,7 +35,7 @@ No SQL knowledge required.
 - **FastAPI** — REST API server
 - **LangGraph** — ReAct agent loop (`create_react_agent`)
 - **LangChain** — Tool definitions and model integration
-- **LangChain Google GenAI** — Gemini 2.5 Flash connector
+- **LangChain Groq / Google GenAI** — LLM connectors (Groq GPT-OSS 120B or Gemini 2.5 Flash, selected via `LLM_PROVIDER`)
 - **SQLite** — Database engine
 
 ### Frontend
@@ -79,7 +79,7 @@ JSON response → React frontend
 
 - Python 3.9+
 - Node.js 18+
-- Google Gemini API key → [Get one here](https://aistudio.google.com/app/apikey)
+- An LLM API key: Groq → [console.groq.com/keys](https://console.groq.com/keys) or Google Gemini → [aistudio.google.com](https://aistudio.google.com/app/apikey)
 
 ---
 
@@ -96,8 +96,8 @@ source venv/bin/activate        # macOS/Linux
 # Install dependencies
 pip install -r requirements.txt
 
-# Add your Gemini API key
-echo "GEMINI_API_KEY=your_key_here" > .env
+# Add your LLM API key (Groq or Gemini; see .env.example for all options)
+cp .env.example .env            # then set GROQ_API_KEY (or GEMINI_API_KEY)
 
 # Generate the sample database
 python database/setup_db.py

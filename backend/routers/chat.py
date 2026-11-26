@@ -5,6 +5,8 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from llm_errors import user_facing_error
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -24,6 +26,21 @@ class ChatResponse(BaseModel):
     trace: list = []
 
 
+def _tool_payload(msg) -> str:
+    """Full tool output for the UI.
+
+    Tools that return (content, artifact) send a trimmed `content` to the LLM and
+    keep the complete result in `artifact`; the UI always gets the complete one.
+    """
+    artifact = getattr(msg, "artifact", None)
+    if isinstance(artifact, str):
+        return artifact
+    content = msg.content
+    if isinstance(content, list):
+        content = "".join(b.get("text", "") for b in content if isinstance(b, dict))
+    return content
+
+
 def extract_trace(messages):
     trace = []
     for msg in messages:
@@ -36,15 +53,36 @@ def extract_trace(messages):
                     "input": tc.get("args", {})
                 })
         elif msg_type == "ToolMessage":
-            content = msg.content
-            if isinstance(content, list):
-                content = "".join(b.get("text", "") for b in content if isinstance(b, dict))
             trace.append({
                 "step": "tool_result",
                 "tool": getattr(msg, "name", ""),
-                "output": content
+                "output": _tool_payload(msg)
             })
     return trace
+
+
+def history_entry(clean_text: str, all_messages: list) -> str:
+    """Assistant turn as stored in conversation history.
+
+    Only the reply text plus a one-line note of the SQL run and visuals shown —
+    never chart data — so follow-up questions keep context without resending rows.
+    """
+    notes = []
+    for msg in all_messages:
+        if type(msg).__name__ != "AIMessage":
+            continue
+        for tc in getattr(msg, "tool_calls", None) or []:
+            name, args = tc.get("name", ""), tc.get("args", {}) or {}
+            if name == "tool_execute_query" and args.get("sql_query"):
+                notes.append(f"ran SQL: {' '.join(str(args['sql_query']).split())}")
+            elif name == "tool_generate_chart":
+                notes.append(f"showed a {args.get('chart_type', '')} chart "
+                             f"(x={args.get('x_axis', '')}, y={args.get('y_axis', '')})")
+            elif name == "tool_generate_flowchart":
+                notes.append("showed a diagram")
+    if not notes:
+        return clean_text
+    return f"{clean_text}\n[Context: {'; '.join(notes)}]"
 
 
 def collect_rich_blobs(all_messages: list) -> dict:
@@ -57,10 +95,7 @@ def collect_rich_blobs(all_messages: list) -> dict:
         tool_name = getattr(msg, "name", "")
         if tool_name not in RICH_TOOLS:
             continue
-        content = msg.content
-        if isinstance(content, list):
-            content = "".join(b.get("text", "") for b in content if isinstance(b, dict))
-        content = content.strip()
+        content = _tool_payload(msg).strip()
         if not content:
             continue
         try:
@@ -146,18 +181,20 @@ async def chat_endpoint(request: ChatRequest):
 
         rich_by_type = collect_rich_blobs(all_messages)
         clean_text = remove_rich_blobs(output_str).strip()
-        for blob in rich_by_type.values():
-            clean_text = clean_text + "\n" + blob
 
         history.append(("user", request.message))
-        history.append(("assistant", clean_text))
+        history.append(("assistant", history_entry(clean_text, all_messages)))
         conversation_histories[request.session_id] = history[-20:]
 
+        response_text = clean_text
+        for blob in rich_by_type.values():
+            response_text = response_text + "\n" + blob
+
         trace = extract_trace(all_messages)
-        return ChatResponse(response=clean_text, message_type="agent_response", trace=trace)
+        return ChatResponse(response=response_text, message_type="agent_response", trace=trace)
     except Exception as e:
-        logger.error(f"Chat error: {e}")
-        return ChatResponse(response=f"An error occurred: {str(e)}", message_type="error")
+        logger.exception("Chat error")
+        return ChatResponse(response=user_facing_error(e), message_type="error")
 
 
 @router.delete("/{session_id}")
@@ -200,17 +237,16 @@ async def chat_stream(request: ChatRequest):
             for blob in rich_by_type.values():
                 yield "data: " + json.dumps({"type": "rich", "value": blob}) + "\n\n"
 
-            full_output = clean_text + "\n" + "\n".join(rich_by_type.values())
             history.append(("user", request.message))
-            history.append(("assistant", full_output))
+            history.append(("assistant", history_entry(clean_text, all_messages)))
             conversation_histories[request.session_id] = history[-20:]
 
             trace = extract_trace(all_messages)
             yield "data: " + json.dumps({"type": "done", "trace": trace}) + "\n\n"
 
         except Exception as e:
-            logger.error(f"Stream error: {e}")
-            yield "data: " + json.dumps({"type": "error", "value": str(e)}) + "\n\n"
+            logger.exception("Stream error")
+            yield "data: " + json.dumps({"type": "error", "value": user_facing_error(e)}) + "\n\n"
 
     return StreamingResponse(
         generate(),
