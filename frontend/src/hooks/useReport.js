@@ -6,6 +6,7 @@ export function useReport(version) {
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
+    if (version === null || version === undefined) return undefined; // database not synced yet
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setState((s) => ({ ...s, loading: true, error: null }));

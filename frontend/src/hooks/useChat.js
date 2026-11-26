@@ -1,7 +1,46 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { addHistoryEntry, updateHistoryEntry } from '../lib/queryHistory';
 
-const SESSION_ID = 'session_' + Math.random().toString(36).slice(2);
+// The conversation lives in sessionStorage (per browser tab) together with its session id,
+// so a refresh keeps both the visible thread and the backend's conversation memory.
+const SESSION_KEY = 'agentdb.chatSession';
+const MESSAGES_KEY = 'agentdb.chatMessages';
+const MAX_STORED_MESSAGES = 40;
+
+function readSession(key, fallback) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw === null ? fallback : JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function writeSession(key, value) {
+  try {
+    if (value === null) sessionStorage.removeItem(key);
+    else sessionStorage.setItem(key, JSON.stringify(value));
+  } catch { /* storage full or unavailable — the thread just won't survive a refresh */ }
+}
+
+function newSessionId() {
+  return 'session_' + Math.random().toString(36).slice(2);
+}
+
+let SESSION_ID = readSession(SESSION_KEY, null);
+if (typeof SESSION_ID !== 'string') {
+  SESSION_ID = newSessionId();
+  writeSession(SESSION_KEY, SESSION_ID);
+}
+
+function loadMessages() {
+  const stored = readSession(MESSAGES_KEY, []);
+  if (!Array.isArray(stored)) return [];
+  // A reply that was still streaming when the page closed can't be resumed.
+  return stored.map((m) => (m.streaming
+    ? { role: 'agent', content: 'This answer was interrupted when the page was closed or refreshed.', error: true, trace: [] }
+    : m));
+}
 
 /** Outcome of an agent turn, read from its tool trace. */
 export function summarizeTrace(trace = []) {
@@ -38,17 +77,25 @@ function updateLast(setMessages, fn) {
 }
 
 export function useChat({ getDatabase } = {}) {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(loadMessages);
   const [isLoading, setIsLoading] = useState(false);
   const loadingRef = useRef(false);
+
+  // Persist once a turn has settled (not on every streamed token).
+  useEffect(() => {
+    if (!isLoading) writeSession(MESSAGES_KEY, messages.slice(-MAX_STORED_MESSAGES));
+  }, [messages, isLoading]);
 
   const appendAgentMessage = useCallback((text) => {
     setMessages((prev) => [...prev, { role: 'agent', content: text, notice: true }]);
   }, []);
 
   const clearChat = useCallback(async () => {
+    const oldSession = SESSION_ID;
+    SESSION_ID = newSessionId();
+    writeSession(SESSION_KEY, SESSION_ID);
     setMessages([]);
-    try { await fetch(`/chat/${SESSION_ID}`, { method: 'DELETE' }); } catch { /* backend offline */ }
+    try { await fetch(`/chat/${oldSession}`, { method: 'DELETE' }); } catch { /* backend offline */ }
   }, []);
 
   const sendMessage = useCallback(async (raw) => {

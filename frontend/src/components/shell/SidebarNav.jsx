@@ -15,7 +15,7 @@ export default function SidebarNav({ path, collapsed, onToggleCollapse, mobileOp
       <div className={`ag-scrim ${mobileOpen ? 'is-open' : ''}`} onClick={onCloseMobile} aria-hidden="true" />
       <aside className={`ag-sidebar ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Main navigation">
         <div className="ag-sidebar-brand">
-          <a href={ROUTES.dashboard} onClick={go(ROUTES.dashboard)} className="ag-brand-link" aria-label="AgentDB dashboard">
+          <a href={ROUTES.workspace} onClick={go(ROUTES.workspace)} className="ag-brand-link" aria-label="AgentDB home (AI Workspace)">
             <Logo collapsed={collapsed} />
           </a>
           <button className="ag-icon-btn ag-only-mobile" onClick={onCloseMobile} aria-label="Close navigation">
@@ -29,7 +29,7 @@ export default function SidebarNav({ path, collapsed, onToggleCollapse, mobileOp
             <div key={section.label} className="ag-nav-section">
               <p className="ag-nav-label">{section.label}</p>
               {section.items.map(({ to, label, icon: Icon }) => {
-                const active = path === to || (to !== ROUTES.dashboard && path.startsWith(to));
+                const active = path === to;
                 return (
                   <a
                     key={to}

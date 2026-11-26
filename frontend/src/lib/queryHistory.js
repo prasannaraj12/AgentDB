@@ -10,7 +10,12 @@ const listeners = new Set();
 function load() {
   try {
     const parsed = JSON.parse(localStorage.getItem(KEY) || '[]');
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    // A question still "running" from a page that was closed or refreshed will never finish.
+    const stale = Date.now() - 5 * 60 * 1000;
+    return parsed.map((e) => (e.status === 'running' && (e.ts || 0) < stale
+      ? { ...e, status: 'failed', error: 'Interrupted (page closed or refreshed)' }
+      : e));
   } catch {
     return [];
   }

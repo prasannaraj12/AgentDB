@@ -56,7 +56,7 @@ function Landing() {
     document.body.classList.add('landing');
     return () => document.body.classList.remove('landing');
   }, []);
-  return <LandingPage onLaunch={() => navigate(ROUTES.dashboard)} />;
+  return <LandingPage onLaunch={() => navigate(ROUTES.workspace)} />;
 }
 
 function AgentDBApp({ path }) {
@@ -80,6 +80,7 @@ function AgentDBApp({ path }) {
 
   const [suggestions, setSuggestions] = useState([]);
   useEffect(() => {
+    if (db.version === null) return undefined; // wait until the remembered database is selected
     let cancelled = false;
     fetch('/suggestions')
       .then((r) => (r.ok ? r.json() : { suggestions: [] }))
@@ -115,17 +116,19 @@ function AgentDBApp({ path }) {
     clearPinned: () => setPinnedCharts([]),
   }), [chat, db, report, suggestions, ask, displayName, setDisplayName, pinnedCharts, setPinnedCharts]);
 
-  const Page = PAGES[path];
+  // AI Workspace is home: "/", "/app" and unknown paths render it and canonicalize the URL.
+  const route = PAGES[path] ? path : ROUTES.workspace;
+  const Page = PAGES[route];
   useEffect(() => {
-    if (!Page) navigate(ROUTES.dashboard, { replace: true });
-  }, [Page]);
+    if (route !== path) navigate(route, { replace: true });
+  }, [route, path]);
 
   return (
     <AppContext.Provider value={ctx}>
       <div className="ag-app">
         <div className={`ag-frame ${collapsed ? 'is-collapsed' : ''}`}>
           <SidebarNav
-            path={path}
+            path={route}
             collapsed={collapsed}
             onToggleCollapse={() => setCollapsed((c) => !c)}
             mobileOpen={mobileNav}
@@ -144,7 +147,7 @@ function AgentDBApp({ path }) {
               installPrompt={installPrompt}
               onInstall={handleInstall}
             />
-            <main className={`ag-content ${path === ROUTES.workspace ? 'is-workspace' : ''}`} key={path}>
+            <main className={`ag-content ${route === ROUTES.workspace ? 'is-workspace' : ''}`} key={route}>
               {Page && <Page />}
             </main>
           </div>
@@ -158,8 +161,8 @@ export default function App() {
   const path = usePath();
   let content;
   if (path.startsWith('/share/')) content = <SharedDashboard />;
-  else if (path === '/app' || path.startsWith('/app/')) content = <AgentDBApp path={path} />;
-  else content = <Landing />;
+  else if (path === '/welcome') content = <Landing />; // product landing page, kept for the marketing site
+  else content = <AgentDBApp path={path} />; // '/', '/app', '/app/*' — AI Workspace is the default
   return (
     <>
       {content}
