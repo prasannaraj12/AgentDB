@@ -35,7 +35,7 @@ No SQL knowledge required.
 - **FastAPI** — REST API server
 - **LangGraph** — ReAct agent loop (`create_react_agent`)
 - **LangChain** — Tool definitions and model integration
-- **LangChain Google GenAI** — Gemini 2.5 Flash connector
+- **LangChain Groq / Google GenAI** — LLM connectors (Groq GPT-OSS 120B or Gemini 2.5 Flash, selected via `LLM_PROVIDER`)
 - **SQLite** — Database engine
 
 ### Frontend
@@ -79,7 +79,7 @@ JSON response → React frontend
 
 - Python 3.9+
 - Node.js 18+
-- Google Gemini API key → [Get one here](https://aistudio.google.com/app/apikey)
+- An LLM API key: Groq → [console.groq.com/keys](https://console.groq.com/keys) or Google Gemini → [aistudio.google.com](https://aistudio.google.com/app/apikey)
 
 ---
 
@@ -96,8 +96,8 @@ source venv/bin/activate        # macOS/Linux
 # Install dependencies
 pip install -r requirements.txt
 
-# Add your Gemini API key
-echo "GEMINI_API_KEY=your_key_here" > .env
+# Add your LLM API key (Groq or Gemini; see .env.example for all options)
+cp .env.example .env            # then set GROQ_API_KEY (or GEMINI_API_KEY)
 
 # Generate the sample database
 python database/setup_db.py
@@ -165,18 +165,25 @@ Frontend runs on `http://localhost:5173`
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx              # Root layout + orchestration
+│   │   ├── App.jsx              # Routes: landing (/), app shell (/app/*), shared dashboards (/share/:token)
+│   │   ├── pages/               # Dashboard, AI Workspace, Insights, Reports, Query History,
+│   │   │                        # Database Explorer, Tables & Schema, ER Diagrams, Settings
 │   │   ├── hooks/
-│   │   │   ├── useChat.js       # SSE streaming + message state
-│   │   │   ├── useDatabase.js   # DB select / attach / upload logic
+│   │   │   ├── useChat.js       # SSE streaming, message state, per-query outcome tracking
+│   │   │   ├── useDatabase.js   # DB select / attach / detach / upload + connection status
+│   │   │   ├── useReport.js     # /report/generate data (schema, row counts, stats)
 │   │   │   └── useVoiceInput.js # Speech recognition hook
+│   │   ├── lib/                 # Router, query-history store, insight/ER builders, SQL highlighter
+│   │   ├── styles/              # Design system (agentdb.css), workspace.css, pages.css
 │   │   └── components/
-│   │       ├── ChatMessage.jsx  # Message renderer (text + rich blobs)
+│   │       ├── shell/           # Sidebar, top bar with command search, logo
+│   │       ├── dashboard/       # Query activity chart, recent queries, insight cards
+│   │       ├── workspace/       # SQL block (highlighting, copy, expand)
+│   │       ├── ui/              # Panels, buttons, status dots, empty states
+│   │       ├── ChatMessage.jsx  # AI answer layout: summary → SQL → result → diagram → insights
 │   │       ├── ChartRenderer.jsx    # Recharts bar/line/pie/scatter
 │   │       ├── MermaidDiagram.jsx   # Mermaid.js ER + flowcharts
-│   │       ├── DataTable.jsx        # Paginated query results table
-│   │       ├── Dashboard.jsx        # Pinned charts grid
-│   │       ├── ReportModal.jsx      # Auto-generated DB report modal
+│   │       ├── DataTable.jsx        # Paginated results table with CSV export
 │   │       └── SharedDashboard.jsx  # Public shareable dashboard view
 │   └── package.json
 │

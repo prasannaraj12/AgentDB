@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-has_api_key = os.getenv("GEMINI_API_KEY") is not None
+has_api_key = bool(os.getenv("GROQ_API_KEY") or os.getenv("GEMINI_API_KEY"))
 if has_api_key:
     from agent import get_agent_executor  # noqa: F401 — warm up import
 

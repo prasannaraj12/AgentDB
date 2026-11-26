@@ -1,23 +1,94 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Database, Upload, LayoutDashboard, Trash2, ChevronDown, RotateCcw, Mic, MicOff, FileText, Download } from 'lucide-react';
-import ChatMessage from './components/ChatMessage';
-import Dashboard from './components/Dashboard';
-import ReportModal from './components/ReportModal';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SharedDashboard from './components/SharedDashboard';
 import LandingPage from './components/LandingPage';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
+import SidebarNav from './components/shell/SidebarNav';
+import TopBar from './components/shell/TopBar';
+import DashboardPage from './pages/DashboardPage';
+import WorkspacePage from './pages/WorkspacePage';
+import InsightsPage from './pages/InsightsPage';
+import ReportsPage from './pages/ReportsPage';
+import HistoryPage from './pages/HistoryPage';
+import ExplorerPage from './pages/ExplorerPage';
+import SchemaPage from './pages/SchemaPage';
+import ErDiagramPage from './pages/ErDiagramPage';
+import SettingsPage from './pages/SettingsPage';
 import { useChat } from './hooks/useChat';
 import { useDatabase } from './hooks/useDatabase';
-import { useVoiceInput } from './hooks/useVoiceInput';
+import { useReport } from './hooks/useReport';
+import { navigate, usePath, ROUTES } from './lib/router';
+import { AppContext } from './lib/appContext';
+import './styles/agentdb.css';
+import './styles/workspace.css';
+import './styles/pages.css';
+import './styles/core.css';
 
-const WELCOME = 'Hello! I am AgentDB, your Intelligent Database AI Agent. Ask me anything about your database: queries, charts, diagrams, or insights.';
+const PAGES = {
+  [ROUTES.dashboard]: DashboardPage,
+  [ROUTES.workspace]: WorkspacePage,
+  [ROUTES.insights]: InsightsPage,
+  [ROUTES.reports]: ReportsPage,
+  [ROUTES.history]: HistoryPage,
+  [ROUTES.explorer]: ExplorerPage,
+  [ROUTES.schema]: SchemaPage,
+  [ROUTES.er]: ErDiagramPage,
+  [ROUTES.settings]: SettingsPage,
+};
 
-export default function App() {
-  if (window.location.pathname.startsWith('/share/')) return <SharedDashboard />;
+function readStored(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? fallback : JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
 
-  const [appMode, setAppMode] = useState('landing'); // 'landing' | 'app'
-  const [input, setInput] = useState('');
+function useStoredState(key, fallback) {
+  const [value, setValue] = useState(() => readStored(key, fallback));
+  useEffect(() => {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage unavailable */ }
+  }, [key, value]);
+  return [value, setValue];
+}
+
+function Landing() {
+  useEffect(() => {
+    document.body.classList.add('landing');
+    return () => document.body.classList.remove('landing');
+  }, []);
+  return <LandingPage onLaunch={() => navigate(ROUTES.workspace)} />;
+}
+
+function AgentDBApp({ path }) {
+  const [collapsed, setCollapsed] = useStoredState('agentdb.sidebarCollapsed', false);
+  const [mobileNav, setMobileNav] = useState(false);
+  const [displayName, setDisplayName] = useStoredState('agentdb.displayName', '');
+  const [pinnedCharts, setPinnedCharts] = useStoredState('agentdb.pinnedCharts', []);
   const [installPrompt, setInstallPrompt] = useState(null);
+
+  const notifyRef = useRef(null);
+  const onDbMessage = useCallback((text) => notifyRef.current?.(text), []);
+  const db = useDatabase(onDbMessage);
+  const activeDbRef = useRef(db.activeDb);
+  useEffect(() => { activeDbRef.current = db.activeDb; }, [db.activeDb]);
+  const getDatabase = useCallback(() => activeDbRef.current, []);
+
+  const chat = useChat({ getDatabase });
+  useEffect(() => { notifyRef.current = chat.appendAgentMessage; }, [chat.appendAgentMessage]);
+
+  const report = useReport(db.version);
+
+  const [suggestions, setSuggestions] = useState([]);
+  useEffect(() => {
+    if (db.version === null) return undefined; // wait until the remembered database is selected
+    let cancelled = false;
+    fetch('/suggestions')
+      .then((r) => (r.ok ? r.json() : { suggestions: [] }))
+      .then((d) => { if (!cancelled) setSuggestions(d.suggestions || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [db.version]);
 
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
@@ -32,232 +103,71 @@ export default function App() {
     setInstallPrompt(null);
   };
 
+  const { sendMessage } = chat;
+  const ask = useCallback((text) => {
+    navigate(ROUTES.workspace);
+    sendMessage(text);
+  }, [sendMessage]);
+
+  const ctx = useMemo(() => ({
+    chat, db, report, suggestions, ask, displayName, setDisplayName,
+    pinnedCharts,
+    pinChart: (config) => setPinnedCharts((prev) => [...prev, config]),
+    unpinChart: (index) => setPinnedCharts((prev) => prev.filter((_, i) => i !== index)),
+    clearPinned: () => setPinnedCharts([]),
+  }), [chat, db, report, suggestions, ask, displayName, setDisplayName, pinnedCharts, setPinnedCharts]);
+
+  // AI Workspace is home: "/", "/app" and unknown paths render it and canonicalize the URL.
+  const route = PAGES[path] ? path : ROUTES.workspace;
+  const Page = PAGES[route];
   useEffect(() => {
-    if (appMode === 'landing') {
-      document.body.classList.add('landing');
-    } else {
-      document.body.classList.remove('landing');
-    }
-  }, [appMode]);
-  const [dashboardOpen, setDashboardOpen] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [pinnedCharts, setPinnedCharts] = useState([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [dbOpen, setDbOpen] = useState(true);
-  const [historyOpen, setHistoryOpen] = useState(true);
-  const [suggestions, setSuggestions] = useState([]);
-  const endOfMessagesRef = useRef(null);
-  const fileInputRef = useRef(null);
-
-  const { messages, setMessages, isLoading, queryHistory, sendMessage, typewriteMessage } = useChat();
-
-  const { databases, activeDb, attachedDbs, fetchDatabases, selectDb, attachDb, detachDb, uploadDb } =
-    useDatabase((text) => setMessages((prev) => [...prev, { role: 'agent', content: text }]));
-
-  const { isListening, toggle: toggleVoice } = useVoiceInput((text) => setInput(text));
-
-  useEffect(() => { endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isLoading]);
-
-  // Typewrite welcome message on mount
-  useEffect(() => {
-    typewriteMessage(WELCOME);
-  }, []);
-
-  const fetchSuggestions = async () => {
-    try {
-      const res = await fetch('/suggestions');
-      const data = await res.json();
-      setSuggestions(data.suggestions || []);
-    } catch {}
-  };
-
-  useEffect(() => { fetchSuggestions(); }, [activeDb]);
-
-  const handleSelectDb = async (filename) => {
-    await selectDb(filename);
-    fetchSuggestions();
-  };
-
-  const handleAttachDb = async (filename) => {
-    await attachDb(filename);
-    fetchSuggestions();
-  };
-
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    await uploadDb(file);
-    fetchSuggestions();
-    e.target.value = '';
-  };
-
-  const handleSend = async (e) => {
-    e?.preventDefault();
-    if (!input.trim() || isLoading) return;
-    const msg = input.trim();
-    setInput('');
-    await sendMessage(msg);
-  };
-
-  const handleClearChat = () => {
-    typewriteMessage('Chat cleared. How can I help you?');
-  };
-
-  const handlePinChart = (config) => setPinnedCharts((prev) => [...prev, config]);
-  const handleUnpinChart = (i) => setPinnedCharts((prev) => prev.filter((_, idx) => idx !== i));
-
-  if (appMode === 'landing') return <LandingPage onLaunch={() => setAppMode('app')} />;
+    if (route !== path) navigate(route, { replace: true });
+  }, [route, path]);
 
   return (
-    <div className="app-container" style={{ animation: 'appLoad 0.5s cubic-bezier(0.4,0,0.2,1) both' }}>
-      {/* Title Bar */}
-      <div className="titlebar">
-        <div className="traffic-lights">
-          <span className="tl tl-red" /><span className="tl tl-yellow" /><span className="tl tl-green" />
-        </div>
-        <span className="titlebar-title">AgentDB</span>
-        <div className="titlebar-actions">
-          <button className="mac-btn" onClick={() => setDashboardOpen(true)}>
-            <LayoutDashboard size={13} /> Dashboard
-            {pinnedCharts.length > 0 && <span className="badge">{pinnedCharts.length}</span>}
-          </button>
-          <button className="mac-btn" onClick={() => setReportOpen(true)}>
-            <FileText size={13} /> Report
-          </button>
-          <button className="mac-btn" onClick={handleClearChat} title="Clear chat">
-            <Trash2 size={13} />
-          </button>
-          {installPrompt && (
-            <button className="mac-btn" onClick={handleInstall} title="Install App">
-              <Download size={13} /> Install
-            </button>
-          )}
-          <span className="status-dot" style={{ marginLeft: 4 }} />
-          <span style={{ fontSize: '0.74rem', color: '#6e6e73' }}>Online</span>
+    <AppContext.Provider value={ctx}>
+      <div className="ag-app">
+        <div className={`ag-frame ${collapsed ? 'is-collapsed' : ''}`}>
+          <SidebarNav
+            path={route}
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed((c) => !c)}
+            mobileOpen={mobileNav}
+            onCloseMobile={() => setMobileNav(false)}
+            connection={db.connection}
+            activeDb={db.activeDb}
+            attachedCount={Object.keys(db.attachedDbs).length}
+          />
+          <div className="ag-main">
+            <TopBar
+              onOpenMobileNav={() => setMobileNav(true)}
+              onAsk={ask}
+              connection={db.connection}
+              activeDb={db.activeDb}
+              displayName={displayName}
+              installPrompt={installPrompt}
+              onInstall={handleInstall}
+            />
+            <main className={`ag-content ${route === ROUTES.workspace ? 'is-workspace' : ''}`} key={route}>
+              {Page && <Page />}
+            </main>
+          </div>
         </div>
       </div>
+    </AppContext.Provider>
+  );
+}
 
-      {/* Body */}
-      <div className="mac-body">
-        {/* Sidebar */}
-        <aside className={`sidebar${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
-          <div className="sidebar-section">
-            <div className="sidebar-section-header" onClick={() => setDbOpen(o => !o)}>
-              <span className="sidebar-section-title">Database</span>
-              <ChevronDown size={12} className={`sidebar-section-chevron ${dbOpen ? 'open' : ''}`} />
-            </div>
-            <div className={`sidebar-section-body ${dbOpen ? '' : 'collapsed'}`}>
-              <div className="db-selector-mac">
-                <Database size={13} color="#6e6e73" />
-                <select value={activeDb} onChange={(e) => handleSelectDb(e.target.value)} className="db-select">
-                  {databases.map(db => <option key={db} value={db}>{db}</option>)}
-                </select>
-                <ChevronDown size={12} color="#6e6e73" />
-              </div>
-
-              {Object.entries(attachedDbs).map(([alias, filename]) => (
-                <div key={alias} className="attached-db-row">
-                  <span className="attached-db-badge">+</span>
-                  <span className="attached-db-name" title={filename}>{alias}</span>
-                  <button className="attached-db-remove" onClick={() => detachDb(alias)} title="Detach">×</button>
-                </div>
-              ))}
-
-              {databases.filter(db => db !== activeDb && !Object.values(attachedDbs).includes(db)).length > 0 && (
-                <select className="db-attach-select" defaultValue=""
-                  onChange={(e) => { if (e.target.value) { handleAttachDb(e.target.value); e.target.value = ''; } }}>
-                  <option value="" disabled>+ Attach another DB</option>
-                  {databases.filter(db => db !== activeDb && !Object.values(attachedDbs).includes(db))
-                    .map(db => <option key={db} value={db}>{db}</option>)}
-                </select>
-              )}
-
-              <button className="sidebar-upload-btn" onClick={() => fileInputRef.current.click()}>
-                <Upload size={12} /> Upload .db file
-              </button>
-              <input ref={fileInputRef} type="file" accept=".db,.sqlite,.sqlite3,.csv,.tsv,.json"
-                style={{ display: 'none' }} onChange={handleUpload} />
-            </div>
-          </div>
-
-          <div className="sidebar-divider" />
-
-          <div className="sidebar-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: 0 }}>
-            <div className="sidebar-section-header" onClick={() => setHistoryOpen(o => !o)}>
-              <span className="sidebar-section-title">Query History</span>
-              <ChevronDown size={12} className={`sidebar-section-chevron ${historyOpen ? 'open' : ''}`} />
-            </div>
-            <div className={`sidebar-section-body sidebar-history ${historyOpen ? '' : 'collapsed'}`} style={{ flex: 1 }}>
-              {queryHistory.length === 0
-                ? <p className="sidebar-empty">No queries yet</p>
-                : queryHistory.map((item, i) => (
-                  <div key={i} className="history-item" onClick={() => setInput(item.query)}>
-                    <RotateCcw size={11} className="history-item-icon" />
-                    <span className="history-item-text">{item.query}</span>
-                  </div>
-                ))
-              }
-            </div>
-          </div>
-        </aside>
-
-        {/* Sidebar toggle — lives outside aside to avoid overflow:hidden clipping */}
-        <button
-          className="sidebar-toggle-btn"
-          onClick={() => setSidebarCollapsed(o => !o)}
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          style={{ left: sidebarCollapsed ? '36px' : '240px' }}
-        >
-          <ChevronDown size={13} style={{ transform: sidebarCollapsed ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.25s' }} />
-        </button>
-
-        {/* Main Panel */}
-        <div className="main-panel">
-          <main className="chat-container">
-            <div className="chat-inner">
-              {messages.map((msg, idx) => (
-                <ChatMessage key={idx} message={msg} onPinChart={handlePinChart} />
-              ))}
-              {isLoading && !messages[messages.length - 1]?.streaming && (
-                <div className="message-wrapper agent">
-                  <div className="message-avatar agent-avatar"><Database size={14} color="#fff" /></div>
-                  <div className="message-content" style={{ display: 'flex', alignItems: 'center', minHeight: '42px' }}>
-                    <div className="typing-indicator">
-                      <div className="dot" /><div className="dot" /><div className="dot" />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={endOfMessagesRef} />
-            </div>
-          </main>
-
-          <footer className="input-container">
-            <div className="input-inner">
-
-              <form onSubmit={handleSend} className="input-box">
-                <input type="text" className="input-field" value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask about your database, request a chart, or ask for insights..."
-                  autoFocus disabled={isLoading} />
-                <button type="button" className={`mic-btn ${isListening ? 'listening' : ''}`}
-                  onClick={toggleVoice} title="Voice input">
-                  {isListening ? <MicOff size={15} /> : <Mic size={15} />}
-                </button>
-                <button type="submit" className="send-btn" disabled={!input.trim() || isLoading}>
-                  <Send size={15} />
-                </button>
-              </form>
-            </div>
-          </footer>
-        </div>
-      </div>
-
-      {dashboardOpen && (
-        <Dashboard pinned={pinnedCharts} onUnpin={handleUnpinChart} onClose={() => setDashboardOpen(false)} />
-      )}
-      {reportOpen && <ReportModal onClose={() => setReportOpen(false)} />}
+export default function App() {
+  const path = usePath();
+  let content;
+  if (path.startsWith('/share/')) content = <SharedDashboard />;
+  else if (path === '/app' || path.startsWith('/app/')) content = <AgentDBApp path={path} />; // '/app' → AI Workspace
+  else content = <Landing />; // '/', '/welcome' and any other path: the public landing page
+  return (
+    <>
+      {content}
       <PWAUpdatePrompt />
-    </div>
+    </>
   );
 }
