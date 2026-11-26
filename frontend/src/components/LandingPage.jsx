@@ -203,7 +203,7 @@ export default function LandingPage({ onLaunch }) {
       <header className="lp-nav" ref={navRef}>
         <div className="lp-nav-inner">
           <a href="#top" className="lp-brand" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-label="AgentDB — back to top">
-            <Logo />
+            <Logo variant="light" size={28} />
           </a>
           <nav className="lp-nav-links" aria-label="Sections">
             {NAV.map((n) => (
@@ -370,7 +370,7 @@ export default function LandingPage({ onLaunch }) {
       <footer className="lp-footer">
         <div className="lp-container lp-footer-inner">
           <div className="lp-footer-brand">
-            <Logo />
+            <Logo variant="light" size={28} />
             <p>Talk to your database in plain English. Built for the iTech AI Innovation Hackathon 2026.</p>
           </div>
           <nav className="lp-footer-links" aria-label="Footer">

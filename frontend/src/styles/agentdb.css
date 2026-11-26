@@ -84,7 +84,8 @@
 .ag-sidebar-brand { display: flex; align-items: center; justify-content: center; min-height: 32px; padding: 0 6px; }
 .ag-brand-link { display: inline-flex; }
 .ag-logo { display: inline-flex; align-items: center; gap: 9px; }
-.ag-logo svg { flex-shrink: 0; }
+.ag-logo-mark { display: block; flex-shrink: 0; border-radius: 22%; }
+.ag-logo-mark.is-tile { box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.45); }
 .ag-logo-word { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; white-space: nowrap; }
 .ag-divider { height: 1px; background: var(--ag-border); margin: 16px 4px 14px; }
 
